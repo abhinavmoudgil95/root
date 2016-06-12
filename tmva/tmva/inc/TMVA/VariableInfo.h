@@ -70,11 +70,13 @@ namespace TMVA {
       Double_t       GetMax () const { return fXmaxNorm; }
       Double_t       GetMean() const { return fXmeanNorm; }
       Double_t       GetRMS () const { return fXrmsNorm; }
+      Double_t       GetVariance() const {return fXvarianceNorm; }
 
       void           SetMin         ( Double_t v ) { fXminNorm     = v; }
       void           SetMax         ( Double_t v ) { fXmaxNorm     = v; }
       void           SetMean        ( Double_t v ) { fXmeanNorm    = v; }
       void           SetRMS         ( Double_t v ) { fXrmsNorm     = v; }
+      void           SetVariance    ( Double_t v ) { fXvarianceNorm= v; }
       void           SetExternalLink( void* p    ) { fExternalData = p; }
       void           ResetMinMax() { fXminNorm = 1e30; fXmaxNorm = -1e30; }
 
@@ -107,6 +109,7 @@ namespace TMVA {
       Double_t fXmaxNorm;        //! maximum value for correlated/decorrelated/PCA variable
       Double_t fXmeanNorm;       //! mean value for correlated/decorrelated/PCA variable
       Double_t fXrmsNorm;        //! rms value for correlated/decorrelated/PCA variable
+      Double_t fXvarianceNorm;   //! Variance value for correlated/decorrelated/PCA variable
       Bool_t   fNormalized;      //! variable gets normalized
       void*    fExternalData;    //! if the variable content is linked to an external pointer      
       TString  fExternalDataType;//! type of external variable (int, long, double, float) - to be done JS

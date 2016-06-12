@@ -80,6 +80,7 @@ TMVA::DataLoader::DataLoader( TString thedlName)
    fTransformations      ( "I" ),
    fVerbose              ( kFALSE ),
    fName                 ( thedlName ),
+   fCalcNorm             ( kFALSE ),   
    fDataAssignType       ( kAssignEvents ),
    fATreeEvent           ( NULL )
 {
@@ -129,6 +130,255 @@ TMVA::DataSetInfo& TMVA::DataLoader::AddDataSet( const TString& dsiName )
    if (dsi!=0) return *dsi;
    
    return fDataSetManager->AddDataSetInfo(*(new DataSetInfo(dsiName))); // DSMTEST
+}
+
+//_______________________________________________________________________
+TMVA::DataSetInfo& TMVA::DataLoader::GetDataSetInfo()
+{
+   return DefaultDataSetInfo(); // DSMTEST
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Updates maximum and minimum value of a variable or target
+
+void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x ) 
+{
+   Int_t nvars = DefaultDataSetInfo().GetNVariables();
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
+   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();      
+    if( ivar < nvars ){
+       if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
+      if (x > vars[ivar].GetMax()) vars[ivar].SetMax(x);
+   }
+   else{
+      if (x < tars[ivar-nvars].GetMin()) tars[ivar-nvars].SetMin(x);
+      if (x > tars[ivar-nvars].GetMax()) tars[ivar-nvars].SetMax(x);
+   }
+ }
+
+////////////////////////////////////////////////////////////////////////////////
+/// Computes maximum, minimum, mean, RMS and variance for all 
+/// variables and targets
+
+void TMVA::DataLoader::CalcNorm() 
+{
+   fCalcNorm = kTRUE;
+   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+
+   const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+   const UInt_t ntgts = DefaultDataSetInfo().GetNTargets();
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
+   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();    
+
+   UInt_t nevts = events.size();
+
+   TVectorD x2( nvars+ntgts ); x2 *= 0;
+   TVectorD x0( nvars+ntgts ); x0 *= 0;  
+   TVectorD v0( nvars+ntgts ); v0 *= 0;
+
+   Double_t sumOfWeights = 0;
+   for (UInt_t ievt=0; ievt<nevts; ievt++) {
+      const Event* ev = events[ievt];
+
+      Double_t weight = ev->GetWeight();
+      sumOfWeights += weight;
+      for (UInt_t ivar=0; ivar<nvars; ivar++) {
+         Double_t x = ev->GetValue(ivar);
+         if (ievt==0) {
+            vars[ivar].SetMin(x);
+            vars[ivar].SetMax(x);
+         } 
+         else {
+            UpdateNorm(ivar,  x );
+         }
+         x0(ivar) += x*weight;
+         x2(ivar) += x*x*weight;
+      }
+      for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+         Double_t x = ev->GetTarget(itgt);
+         if (ievt==0) {
+            tars[itgt].SetMin(x);
+            tars[itgt].SetMax(x);
+         } 
+         else {
+            UpdateNorm( nvars+itgt,  x );
+         }
+         x0(nvars+itgt) += x*weight;
+         x2(nvars+itgt) += x*x*weight;
+      }
+   }
+
+   if (sumOfWeights <= 0) {
+      Log() << kFATAL << " the sum of event weights calcualted for your input is == 0"
+            << " or exactly: " << sumOfWeights << " there is obviously some problem..."<< Endl;
+   } 
+
+   // set Mean and RMS
+   for (UInt_t ivar=0; ivar<nvars; ivar++) {
+      Double_t mean = x0(ivar)/sumOfWeights;
+      
+      vars[ivar].SetMean( mean ); 
+      if (x2(ivar)/sumOfWeights - mean*mean < 0) {
+         Log() << kFATAL << " the RMS of your input variable " << ivar 
+               << " evaluates to an imaginary number: sqrt("<< x2(ivar)/sumOfWeights - mean*mean
+               <<") .. sometimes related to a problem with outliers and negative event weights"
+               << Endl;
+      }
+      vars[ivar].SetRMS( TMath::Sqrt( x2(ivar)/sumOfWeights - mean*mean) );
+   }
+   for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+      Double_t mean = x0(nvars+itgt)/sumOfWeights;
+      tars[itgt].SetMean( mean ); 
+      if (x2(nvars+itgt)/sumOfWeights - mean*mean < 0) {
+         Log() << kFATAL << " the RMS of your target variable " << itgt 
+               << " evaluates to an imaginary number: sqrt(" << x2(nvars+itgt)/sumOfWeights - mean*mean
+               <<") .. sometimes related to a problem with outliers and negative event weights"
+               << Endl;
+      }
+      tars[itgt].SetRMS( TMath::Sqrt( x2(nvars+itgt)/sumOfWeights - mean*mean) );
+   }
+
+   // calculate variance
+   for (UInt_t ievt=0; ievt<nevts; ievt++) {
+      const Event* ev = events[ievt];  
+      Double_t weight = ev->GetWeight();
+
+      for (UInt_t ivar=0; ivar<nvars; ivar++) {
+         Double_t x = ev->GetValue(ivar);
+         Double_t mean = vars[ivar].GetMean();
+         v0(ivar) += weight*(x-mean)*(x-mean);
+      }
+
+      for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+         Double_t x = ev->GetTarget(itgt);
+         Double_t mean = tars[itgt].GetMean();
+         v0(nvars+itgt) += weight*(x-mean)*(x-mean);
+      }
+   }  
+
+   // set variance  
+   for (UInt_t ivar=0; ivar<nvars; ivar++) {
+      Double_t variance = v0(ivar)/sumOfWeights;
+      vars[ivar].SetVariance( variance ); 
+      Log() << kINFO << "Variable " << vars[ivar].GetExpression() <<" variance = " << variance << Endl;      
+   } 
+   for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+      Double_t variance = v0(nvars+itgt)/sumOfWeights;
+      tars[itgt].SetVariance( variance ); 
+      Log() << kINFO << "Target " << tars[itgt].GetExpression() <<" variance = " << variance << Endl;          
+   }
+
+   Log() << kINFO << "Set minNorm/maxNorm for variables to: " << Endl;
+   Log() << std::setprecision(3);
+   for (UInt_t ivar=0; ivar<nvars; ivar++)
+      Log() << "    " << vars[ivar].GetInternalName()
+            << "\t: [" << vars[ivar].GetMin() << "\t, " << vars[ivar].GetMax() << "\t] " << Endl;
+   Log() << kINFO << "Set minNorm/maxNorm for targets to: " << Endl;
+   Log() << std::setprecision(3);
+   for (UInt_t itgt=0; itgt<ntgts; itgt++)
+      Log() << "    " << tars[itgt].GetInternalName()
+            << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
+   Log() << std::setprecision(5); // reset to better value       
+}
+
+//_______________________________________________________________________
+void TMVA::DataLoader::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src)
+{
+   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Sbegin();treeinfo!=src->DataInput().Send();treeinfo++)
+   {
+      des->AddSignalTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+   }
+
+   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Bbegin();treeinfo!=src->DataInput().Bend();treeinfo++)
+   {
+      des->AddBackgroundTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Computes variance of all the variables and 
+/// returns a new DataLoader with the selected variables whose variance is above a specific threshold. 
+/// Threshold can be provided by user otherwise default value is 0 i.e. remove the variables which have same value in all 
+/// the events. 
+/// 
+/// \param[in] trafoDefinition Tranformation Definition String
+///
+/// Transformation Definition String Format: "VT(optional float value)"
+/// 
+/// Usage examples: 
+/// 
+/// String    | Description
+/// -------   |----------------------------------------
+/// "VT"      | Select variables whose variance is above threshold value = 0 (Default)
+/// "VT(1.5)" | Select variables whose variance is above threshold value = 1.5
+
+TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
+{
+   TString trOptions = "0";
+   TString trName = "None";
+   if (trafoDefinition.Contains("(")) { 
+
+      // contains transformation parameters
+      Ssiz_t parStart = trafoDefinition.Index( "(" );
+      Ssiz_t parLen   = trafoDefinition.Index( ")", parStart )-parStart+1;
+
+      trName = trafoDefinition(0,parStart);
+      trOptions = trafoDefinition(parStart,parLen);
+      trOptions.Remove(parLen-1,1);
+      trOptions.Remove(0,1);       
+   }
+   else
+      trName = trafoDefinition;
+
+   // variance threshold variable transformation
+   if (trName == "VT") {
+
+      // find threshold value from given input
+      Double_t threshold = 0.0;
+      if (!trOptions.IsFloat()){
+         Log() << kFATAL << " VT transformation must be passed a floating threshold value" << Endl; 
+         return this;
+      }
+      else
+         threshold =  trOptions.Atof();      
+      Log() << kINFO << "Transformation: " << trName << Endl; 
+      Log() << kINFO << "Threshold value: " << threshold << Endl;
+
+      // calculate variance of variables if not done already
+      if(!fCalcNorm)
+         CalcNorm();
+
+      // get variable info
+      const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+      Log() << kINFO << "Number of variables before transformation: " << nvars << Endl; 
+      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
+
+      // return a new dataloader
+      // iterate over all variables, ignore the ones whose variance is below specific threshold 
+      TMVA::DataLoader *transformedloader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
+      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;   
+      Log() << kINFO << "----------------------------------------------------------------" << Endl;
+      Log() << kINFO << "Selected Variables\tVariance" << Endl;     
+      Log() << kINFO << "----------------------------------------------------------------" << Endl;
+      for (UInt_t ivar=0; ivar<nvars; ivar++) {
+         Double_t variance =  vars[ivar].GetVariance();
+         if (variance > threshold)
+         {
+            Log() << kINFO << vars[ivar].GetExpression() << "\t\t" << variance << Endl;      
+            transformedloader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+         }
+      }  
+      Log() << kINFO << "----------------------------------------------------------------" << Endl; 
+      CopyDataLoader(transformedloader,this);
+      transformedloader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
+      Log() << kINFO << "Number of variables after transformation: " << transformedloader->DefaultDataSetInfo().GetNVariables() << Endl;
+
+      return transformedloader;
+   }
+   else {
+      Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;
+   }
+   return this;
 }
 
 // ________________________________________________
