@@ -26,7 +26,7 @@
  * (http://tmva.sourceforge.net/LICENSE)                                          *
  **********************************************************************************/
 
-
+#include <iomanip>
 #include "TROOT.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -256,27 +256,45 @@ void TMVA::DataLoader::CalcNorm()
       }
    }  
 
+   Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
+   maxL = maxL + 8;
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Variables";  
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;   
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+
    // set variance  
+   Log() << std::setprecision(5);
    for (UInt_t ivar=0; ivar<nvars; ivar++) {
       Double_t variance = v0(ivar)/sumOfWeights;
       vars[ivar].SetVariance( variance ); 
-      Log() << kINFO << "Variable " << vars[ivar].GetExpression() <<" variance = " << variance << Endl;      
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;      
    } 
+
+   maxL = DefaultDataSetInfo().GetTargetNameMaxLength();
+   maxL = maxL + 8;
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Targets";  
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;   
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+
    for (UInt_t itgt=0; itgt<ntgts; itgt++) {
       Double_t variance = v0(nvars+itgt)/sumOfWeights;
       tars[itgt].SetVariance( variance ); 
-      Log() << kINFO << "Target " << tars[itgt].GetExpression() <<" variance = " << variance << Endl;          
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << tars[itgt].GetExpression();
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;          
    }
 
    Log() << kINFO << "Set minNorm/maxNorm for variables to: " << Endl;
    Log() << std::setprecision(3);
    for (UInt_t ivar=0; ivar<nvars; ivar++)
-      Log() << "    " << vars[ivar].GetInternalName()
+      Log() << "    " << vars[ivar].GetExpression()
             << "\t: [" << vars[ivar].GetMin() << "\t, " << vars[ivar].GetMax() << "\t] " << Endl;
    Log() << kINFO << "Set minNorm/maxNorm for targets to: " << Endl;
    Log() << std::setprecision(3);
    for (UInt_t itgt=0; itgt<ntgts; itgt++)
-      Log() << "    " << tars[itgt].GetInternalName()
+      Log() << "    " << tars[itgt].GetExpression()
             << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
    Log() << std::setprecision(5); // reset to better value       
 }
@@ -356,15 +374,19 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       // return a new dataloader
       // iterate over all variables, ignore the ones whose variance is below specific threshold 
       TMVA::DataLoader *transformedloader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
-      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;   
+      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;  
+   	  Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
+      maxL = maxL + 16;       
       Log() << kINFO << "----------------------------------------------------------------" << Endl;
-      Log() << kINFO << "Selected Variables\tVariance" << Endl;     
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";  
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;         
       Log() << kINFO << "----------------------------------------------------------------" << Endl;
       for (UInt_t ivar=0; ivar<nvars; ivar++) {
          Double_t variance =  vars[ivar].GetVariance();
          if (variance > threshold)
          {
-            Log() << kINFO << vars[ivar].GetExpression() << "\t\t" << variance << Endl;      
+            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
+            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;   
             transformedloader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
          }
       }  
