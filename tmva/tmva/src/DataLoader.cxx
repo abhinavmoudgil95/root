@@ -55,6 +55,7 @@
 #include "TMVA/DataSetInfo.h"
 #include "TMVA/MethodBoost.h"
 #include "TMVA/MethodCategory.h"
+#include "TMVA/ClassifierFactory.h" 
 
 #include "TMVA/VariableIdentityTransform.h"
 #include "TMVA/VariableDecorrTransform.h"
@@ -396,6 +397,42 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       Log() << kINFO << "Number of variables after transformation: " << transformedloader->DefaultDataSetInfo().GetNVariables() << Endl;
 
       return transformedloader;
+   }
+   // Autoencoder Variable Transformation
+   else if (trName == "AE") {
+
+   	// Book Method and Train 
+		TString methodTitle = "DNN";
+		// options contained in "trOptions"
+		TString theMethodName = "kDNN";
+		TString datasetname = DefaultDataSetInfo().GetName();
+		TString JobName = "TMVAClassification";
+		// initialise methods
+		IMethod* im;		
+		im = ClassifierFactory::Instance().Create( std::string(theMethodName),
+	                                         JobName,
+	                                         methodTitle,
+	                                         DefaultDataSetInfo(),
+	                                         trOptions );
+
+
+
+		MethodBase *method = dynamic_cast<MethodBase*>(im);
+		if (method==0)
+		{
+			Log() << kINFO << "------------------------method = 0----------------------------" << Endl; 
+			return this;
+		} 
+		method->SetAnalysisType( fAnalysisType );
+		method->SetupMethod();
+		method->ParseOptions();
+		method->ProcessSetup();
+		method->CheckSetup();
+
+		// Train DNN Method
+		Log() << kINFO << "Train method: " << method->GetMethodName() << " for Classification" << Endl;
+        method->TrainMethod();		
+        Log() << kINFO << "Training finished" << Endl;
    }
    else {
       Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;
