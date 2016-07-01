@@ -406,7 +406,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    		/// Book Method 
 	  	Event::SetIsTraining(kTRUE);  	
 		gSystem->MakeDirectory(this->GetName());
-		fAnalysisType = Types::kClassification;
+		fAnalysisType = Types::kRegression;
 		TString methodTitle = "DNN";
 		// options contained in "trOptions"
 		Types::EMVA theMethod = TMVA::Types::kDNN;
@@ -429,6 +429,10 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 			Log() << kINFO << "------------------------method = 0----------------------------" << Endl; 
 			return this;
 		} 
+		if (fAnalysisType == Types::kRegression) {
+ 			Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
+		} 
+
 		method->SetAnalysisType( fAnalysisType );
 		method->SetupMethod();
 		method->ParseOptions();
@@ -436,7 +440,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		method->CheckSetup();
 
 		// Train DNN Method
-		Log() << kINFO << "Train method: " << method->GetMethodName() << " for Classification" << Endl;
+		Log() << kINFO << "Train method: " << method->GetMethodName() << " for Regression" << Endl;
         method->TrainMethod();		
         Log() << kINFO << "Training finished" << Endl;
    }
