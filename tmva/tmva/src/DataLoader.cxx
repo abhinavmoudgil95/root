@@ -42,6 +42,7 @@
 #include "TMath.h"
 #include "TObjString.h"
 #include "TRandom3.h"
+#include "TSystem.h"
 
 #include "TMVA/DataLoader.h"
 #include "TMVA/Config.h"
@@ -67,6 +68,7 @@
 #include "TMVA/ResultsRegression.h"
 #include "TMVA/ResultsMulticlass.h"
 
+#include "TMVA/Types.h"
 //const Int_t  MinNoTrainingEvents = 10;
 //const Int_t  MinNoTestEvents     = 1;
 
@@ -401,10 +403,14 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
 
-   	// Book Method and Train 
+   		/// Book Method 
+	  	Event::SetIsTraining(kTRUE);  	
+		gSystem->MakeDirectory(this->GetName());
+		fAnalysisType = Types::kClassification;
 		TString methodTitle = "DNN";
 		// options contained in "trOptions"
-		TString theMethodName = "kDNN";
+		Types::EMVA theMethod = TMVA::Types::kDNN;
+		TString theMethodName = Types::Instance().GetMethodName( theMethod );
 		TString datasetname = DefaultDataSetInfo().GetName();
 		TString JobName = "TMVAClassification";
 		// initialise methods
