@@ -88,6 +88,7 @@ namespace TMVA {
       virtual Double_t GetMvaValue( Double_t* err=0, Double_t* errUpper=0 );
       virtual const std::vector<Float_t>& GetRegressionValues();
       virtual const std::vector<Float_t>& GetMulticlassValues();
+      std::vector<Float_t>& GetLayerActivationValues(const Event* ev, Int_t index);
 
       using MethodBase::ReadWeightsFromStream;
 

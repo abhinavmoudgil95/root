@@ -1092,6 +1092,63 @@ namespace TMVA
             return output;
         }
 
+        template <typename Weights>
+            std::vector<double> Net::get_layer_activations (int index, const std::vector<double>& input, const Weights& weights) const
+        {
+            std::vector<LayerData> layerData;
+            Int_t numOfLayers = m_layers.size();
+            layerData.reserve (m_layers.size ()+1);
+            auto itWeight = begin (weights);
+            auto itInputBegin = begin (input);
+            auto itInputEnd = end (input);
+            layerData.push_back (LayerData (itInputBegin, itInputEnd));
+            size_t numNodesPrev = input.size ();   
+            for (auto& layer: m_layers)
+            {
+                layerData.push_back (LayerData (layer.numNodes (), itWeight, 
+                                               layer.activationFunction (),
+                                               layer.modeOutputValues ()));
+                size_t _numWeights = layer.numWeights (numNodesPrev);
+                itWeight += _numWeights;
+                numNodesPrev = layer.numNodes ();
+            }
+
+            // --------- forward -------------
+            size_t idxLayer = 0, idxLayerEnd = m_layers.size ();
+            for (; idxLayer < idxLayerEnd; ++idxLayer)
+            {
+                LayerData& prevLayerData = layerData.at (idxLayer);
+                LayerData& currLayerData = layerData.at (idxLayer+1);
+
+                forward (prevLayerData, currLayerData);
+                applyFunctions (currLayerData.valuesBegin (), currLayerData.valuesEnd (), currLayerData.activationFunction ());
+            }
+
+            // ------------- fetch activation value of ith layer ------------------
+            if (TMVA::DNN::isFlagSet (ModeOutputValues::DIRECT, layerData.back ().outputMode ()))
+            {
+                std::vector<double> output;
+                if (index >= numOfLayers)
+                {
+                    std::cout << "Layer index exceeds number of layers in net" << std::endl;
+                    std::cout << "Returning activation values of last layer" << std::endl;
+                    output.assign (layerData.back().valuesBegin (), layerData.back().valuesEnd ());
+                }
+                else
+                    output.assign (layerData.at(index).valuesBegin (), layerData.at(index).valuesEnd ());
+                return output;
+            }
+            if (index >= numOfLayers) {
+                std::vector<double> output (layerData.at(index).probabilities ()); 
+                return output;               
+            }                            
+            else {
+                std::vector<double> output (layerData.back().probabilities ());
+                return output;
+            }
+        }
+
+
 
         template <typename Weights, typename PassThrough>
             double Net::operator() (PassThrough& settingsAndBatch, const Weights& weights) const

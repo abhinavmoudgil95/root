@@ -51,6 +51,7 @@
 #include "TMVA/DataSet.h"
 #include "TMVA/IMethod.h"
 #include "TMVA/MethodBase.h"
+#include "TMVA/MethodDNN.h"
 #include "TMVA/DataInputHandler.h"
 #include "TMVA/DataSetManager.h"
 #include "TMVA/DataSetInfo.h"
@@ -403,17 +404,24 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
 
-   		/// Book Method 
-	  	Event::SetIsTraining(kTRUE);  	
-		gSystem->MakeDirectory(this->GetName());
-		fAnalysisType = Types::kRegression;
-		TString methodTitle = "DNN";
-		// options contained in "trOptions"
+   		// add targets to the current loader 
+   		std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();  
+   		const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+		for (UInt_t ivar=0; ivar<nvars; ivar++) {
+			this->AddTarget(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+		}
+
+		// extract names contained in "trOptions"
 		Types::EMVA theMethod = TMVA::Types::kDNN;
 		TString theMethodName = Types::Instance().GetMethodName( theMethod );
 		TString datasetname = DefaultDataSetInfo().GetName();
 		TString JobName = "TMVAClassification";
-		// initialise methods
+
+   		/// Book DNN Method 
+	  	Event::SetIsTraining(kTRUE);  	
+		gSystem->MakeDirectory(this->GetName());
+		fAnalysisType = Types::kRegression;
+		TString methodTitle = "DNN";
 		IMethod* im;		
 		im = ClassifierFactory::Instance().Create( std::string(theMethodName),
 	                                         JobName,
@@ -423,7 +431,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
 
 
-		MethodBase *method = dynamic_cast<MethodBase*>(im);
+		MethodDNN *method = dynamic_cast<MethodDNN*>(im);
 		if (method==0)
 		{
 			Log() << kINFO << "------------------------method = 0----------------------------" << Endl; 
@@ -432,7 +440,6 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		if (fAnalysisType == Types::kRegression) {
  			Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
 		} 
-
 		method->SetAnalysisType( fAnalysisType );
 		method->SetupMethod();
 		method->ParseOptions();
@@ -443,6 +450,63 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		Log() << kINFO << "Train method: " << method->GetMethodName() << " for Regression" << Endl;
         method->TrainMethod();		
         Log() << kINFO << "Training finished" << Endl;
+
+        // Loop over all events and compute new features 
+        // Create a new root file with new TTree containing signal and background tree
+
+        // Initiate a new root file
+        TString newDataSetName = DefaultDataSetInfo().GetName();
+        newDataSetName += "_transformed.root";
+        Int_t indexLayer = 1;
+
+        // create a new TTree
+        TTree *S = new TTree("S","AE Transformed Signal Tree");
+        TTree *B = new TTree("B","AE Transformed Background Tree");
+        TFile *f = new TFile(newDataSetName,"RECREATE");
+        const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+        UInt_t nevts = events.size();
+        TMVA::DataLoader *transformedloader = new TMVA::DataLoader(newDataSetName);
+
+        // get number of variables in hidden layer
+        const Event* ev = events[0];
+		std::vector<Float_t>& actValuesSig = method->GetLayerActivationValues(ev, indexLayer);
+		std::vector<Float_t>& actValuesBkg = method->GetLayerActivationValues(ev, indexLayer);
+		Int_t numOfVariables = actValuesSig.size();
+
+		// create a new tree with transformed variables 
+		// Float_t varArr[numOfVariables];
+		TString varName;
+		TString varType;
+		for (Int_t i = 0; i < numOfVariables; i++) {
+			varName = "var";
+			varName += i;
+			varType = varName;
+			varType += "/F";
+			S->Branch(varName, &actValuesSig[i], varType);
+			B->Branch(varName, &actValuesBkg[i], varType);
+			transformedloader->AddVariable(varName, 'F');
+		}
+
+		// fill the tree with activation values of hidden layers i.e. transformed variable values
+		// std::vector<double>& actValues = method->GetLayerActivationValues(ev, indexLayer);
+		UInt_t cls;
+		for (UInt_t ievt=1; ievt<nevts; ievt++) {
+			ev = events[ievt];
+			if (DefaultDataSetInfo().IsSignal(ev)){
+				actValuesSig = method->GetLayerActivationValues(ev, indexLayer);
+				S->Fill();
+			}
+			else {
+				actValuesBkg = method->GetLayerActivationValues(ev, indexLayer);
+				B->Fill();
+			}
+		}        
+		f->Write();
+		transformedloader->AddSignalTree(S, 1.0);
+		transformedloader->AddBackgroundTree(B, 1.0);
+		transformedloader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
+		Log() << kINFO << "Number of variables after transformation: " << transformedloader->DefaultDataSetInfo().GetNVariables() << Endl;
+		return transformedloader;
    }
    else {
       Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;

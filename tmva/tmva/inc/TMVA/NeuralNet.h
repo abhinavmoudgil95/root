@@ -1140,6 +1140,9 @@ namespace TMVA
          template <typename Weights>
             std::vector<double> compute (const std::vector<double>& input, const Weights& weights) const; ///< compute the net with the given input and the given weights
 
+         template <typename Weights>
+            std::vector<double> get_layer_activations (int index, const std::vector<double>& input, const Weights& weights) const;
+
          template <typename Weights, typename PassThrough>
             double operator() (PassThrough& settingsAndBatch, const Weights& weights) const; ///< execute computation of the DNN for one mini-batch (used by the minimizer); no computation of gradients
 
