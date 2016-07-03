@@ -339,11 +339,11 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 	UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
 	UInt_t nevts = events.size();
 
+	TString varName, tarName, varType, tarType;
 	// it's a regression problem
 	if (numOfTargets != 0)
 	{
 		// create a new tree with transformed variables and original targets
-		TString varName, tarName, varType, tarType;
 		TTree *R = new TTree("R","AE Transformed Regression Tree");
 		for (Int_t i = 0; i < numOfTranfVariables; i++) {
 			varName = "aeTransformedVar";
@@ -379,10 +379,36 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 	}
 	else // classification problem
 	{
+		const Int_t N = numOfClasses;
+		TTree *classes[N];
+		for (Int_t i = 0; i < numOfTranfVariables; i++) {
+			varName = "aeTransformedVar";
+			varName += i;
+			varType = varName;
+			varType += "/F";
 
+			for (Int_t j = 0; j < numOfClasses; j++) {
+				classes[j]->Branch(varName, &tranfValues[i], varType);
+				if (i == 0) {// set tree name and title, done only once
+					classes[j]->SetName(DefaultDataSetInfo().GetClassInfo(j)->GetName());
+					classes[j]->SetTitle(DefaultDataSetInfo().GetClassInfo(j)->GetName());
+				}
+			}
+			transformedLoader->AddVariable(varName, 'F');
+		}
+		UInt_t itgt, cls;
+		for (UInt_t ievt = 0; ievt < nevts; ievt++) {
+			ev = events[ievt];
+			cls = ev->GetClass();
+			tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+			classes[cls]->Fill();
+		} 
+		f->Write();
+		for (UInt_t it = 0; it < numOfClasses; it++)
+			transformedLoader->AddTree(classes[it], DefaultDataSetInfo().GetClassInfo(it)->GetName());	
+		transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
 	}
 	return transformedLoader;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
