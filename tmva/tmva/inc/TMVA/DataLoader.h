@@ -54,6 +54,7 @@ namespace TMVA {
 
    class IMethod;
    class MethodBase;
+   class MethodDNN;
    class DataInputHandler;
    class DataSetInfo;
    class DataSetManager;
@@ -87,6 +88,7 @@ namespace TMVA {
       DataSetInfo& AddDataSet( const TString&  );
 
       void CalcNorm();
+      DataLoader* AETransform(MethodDNN *method, const std::vector<Event*>& events, Int_t indexLayer);
       DataLoader* VarTransform(TString trafoDefinition);
 
       // special case: signal/background
