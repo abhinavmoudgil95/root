@@ -185,6 +185,7 @@ namespace TMVA {
       void                     SetInputTreesFromEventAssignTrees();
       void                     CopyDataLoader(DataLoader* des, DataLoader* src);
       void                     UpdateNorm (Int_t ivar, Double_t x); 
+      TTree*                   MakeDataSetTree();
    private:
 
       // data members
