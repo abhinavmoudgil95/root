@@ -345,16 +345,16 @@ TTree* TMVA::DataLoader::MakeDataSetTree()
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Transform the events by Autoencoder and return a new DataLoader
-/// It also writes the new dataset to a root file
+/// and writes the transformed dataset to a new root file
 
-TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::vector<Event*>& events, Int_t indexLayer)
+TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLayer)
 {
+	const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
 	// get number of variables for new DataLoader
 	TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
     const Event* ev = events[0];
 	std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
 	UInt_t numOfTranfVariables = tranfValues.size();
-	Log() << kINFO << "[AE Transform] Number of transformed variables: " << numOfTranfVariables << Endl;
 
 	// create a new dataset file 
     TString newDataSetName = DefaultDataSetInfo().GetName();
@@ -362,10 +362,10 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 	TFile *f = new TFile(newDataSetName,"RECREATE");
 
 	// get number of classes
-	UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
-	UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
-	UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
-	UInt_t nevts = events.size();
+	const UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
+	const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
+	const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
+	const UInt_t nevts = events.size();
 	Log() << kINFO << "[AE Transform] Number of Classes: " << numOfClasses << Endl;
 	Log() << kINFO << "[AE Transform] Number of Targets: " << numOfTargets << Endl;
 	Log() << kINFO << "[AE Transform] Number of Variables: " << numOfTranfVariables << Endl;
@@ -376,9 +376,9 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 	if (numOfTargets != 0)
 	{
 		// create a new tree with transformed variables and original targets
-		TTree *R = new TTree("R","AE Transformed Regression Tree");
+		TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
 		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-			varName = "aeTransformedVar";
+			varName = "ae_transformed_var";
 			varName += i;
 			varType = varName;
 			varType += "/F";
@@ -407,23 +407,25 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 		f->Close();
 		Double_t regWeight = 1.0;
 		TCut myCut = "";
-		transformedLoader->AddRegressionTree(R, regWeight);
+		TFile *transformedData = TFile::Open(newDataSetName);
+		TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");				
+		transformedLoader->AddRegressionTree(s, regWeight);
 		transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
+		transformedData->Close();
 	}
 	else // classification problem
 	{
+		// create array of trees, each tree represents a class
 		const UInt_t N = numOfClasses;
-		Log() << kINFO << "test before array of tree pointers" << Endl;
 		TTree *classes[N];
 		Log() << kINFO << "[AE Transform] Looping over transformed variables to set names" << Endl;
 		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-			varName = "aeTransformedVar";
+			varName = "ae_transformed_var";
 			varName += i;
 			varType = varName;
 			varType += "/F";
 
-			Log() << kINFO << "[AE Transform] varName " << varName << Endl;
-			Log() << kINFO << "[AE Transform] varType " << varType << Endl;			
+			Log() << kINFO << "[AE Transform] New varName " << varName << Endl;		
 			for (UInt_t j = 0; j < numOfClasses; j++) {
 				if (i == 0) {// allocate memory to tree pointer
 					classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
@@ -433,7 +435,8 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 			}
 			transformedLoader->AddVariable(varName, 'F');
 		}
-		Log() << kINFO << "[AE Transform] Added " << transformedLoader << transformedLoader->GetDataSetInfo().GetNVariables() << " variables to transformedLoader"<< Endl;		
+
+		// loop over all class events, transform and fill the respective trees
 		UInt_t itgt, cls;
 		for (UInt_t ievt = 0; ievt < nevts; ievt++) {
 			ev = events[ievt];
@@ -443,13 +446,13 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, const std::ve
 		} 
 		f->Write();
 		f->Close();
-		TFile *inputFile = TFile::Open(newDataSetName);
+		TFile *transformedData = TFile::Open(newDataSetName);
 		for (UInt_t it = 0; it < numOfClasses; it++){
-			TTree* s = (TTree*)inputFile->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
+			TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
 			transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());	
 		}
 		transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
-		inputFile->Close();
+		transformedData->Close();
 	}
 	return transformedLoader;
 }
@@ -514,7 +517,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
       // return a new dataloader
       // iterate over all variables, ignore the ones whose variance is below specific threshold 
-      TMVA::DataLoader *transformedloader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
+      TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
       Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;  
    	  Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
       maxL = maxL + 16;       
@@ -532,11 +535,11 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
          }
       }  
       Log() << kINFO << "----------------------------------------------------------------" << Endl; 
-      CopyDataLoader(transformedloader,this);
-      transformedloader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
-      Log() << kINFO << "Number of variables after transformation: " << transformedloader->DefaultDataSetInfo().GetNVariables() << Endl;
+      CopyDataLoader(transformedLoader,this);
+      transformedLoader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
+      Log() << kINFO << "Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;
 
-      return transformedloader;
+      return transformedLoader;
    }
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
@@ -591,8 +594,8 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
         Log() << kINFO << "Training finished" << Endl;
 
         Int_t indexLayer = 1;
-        const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-        TMVA::DataLoader* transformedLoader = AETransform(method, events, indexLayer);
+        TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
+        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;        
         return transformedLoader; 
    }
    else {

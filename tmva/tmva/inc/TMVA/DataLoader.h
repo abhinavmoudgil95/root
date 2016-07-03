@@ -88,7 +88,6 @@ namespace TMVA {
       DataSetInfo& AddDataSet( const TString&  );
 
       void CalcNorm();
-      DataLoader* AETransform(MethodDNN *method, const std::vector<Event*>& events, Int_t indexLayer);
       DataLoader* VarTransform(TString trafoDefinition);
 
       // special case: signal/background
@@ -186,6 +185,9 @@ namespace TMVA {
       void                     CopyDataLoader(DataLoader* des, DataLoader* src);
       void                     UpdateNorm (Int_t ivar, Double_t x); 
       TTree*                   MakeDataSetTree();
+      DataLoader*              AETransform(MethodDNN *method, Int_t indexLayer);
+
+
    private:
 
       // data members
