@@ -366,15 +366,14 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 	const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
 	const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
 	const UInt_t nevts = events.size();
-	Log() << kINFO << "[AE Transform] Number of Classes: " << numOfClasses << Endl;
-	Log() << kINFO << "[AE Transform] Number of Targets: " << numOfTargets << Endl;
-	Log() << kINFO << "[AE Transform] Number of Variables: " << numOfTranfVariables << Endl;
-	Log() << kINFO << "[AE Transform] Number of Events: " << nevts << Endl;
+
+	Log() << kINFO << "[AE Transform] Total number of events: " << nevts << Endl;
 
 	TString varName, tarName, varType, tarType;
 	// it's a regression problem
 	if (numOfTargets != 0)
 	{
+		Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;		
 		// create a new tree with transformed variables and original targets
 		TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
 		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
@@ -382,6 +381,8 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			varName += i;
 			varType = varName;
 			varType += "/F";
+
+			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;				
 			R->Branch(varName, &tranfValues[i], varType);
 			transformedLoader->AddVariable(varName, 'F');
 		}
@@ -390,6 +391,8 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 		for (UInt_t i = 0; i < numOfTargets; i++) {
 			tarType = tars[i].GetExpression();
 			tarType += "/F";
+
+			Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;				
 			R->Branch(tars[i].GetExpression(), &targets[i], tarType);
 			transformedLoader->AddTarget(tars[i].GetExpression());
 		}
@@ -402,9 +405,10 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			for (itgt = 0; itgt < numOfTargets; itgt++)
 				targets[itgt] = ev->GetTarget(itgt);
 			R->Fill();
-		}  		
+		}		  		
 		f->Write();
 		f->Close();
+		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;		
 		Double_t regWeight = 1.0;
 		TCut myCut = "";
 		TFile *transformedData = TFile::Open(newDataSetName);
@@ -415,21 +419,21 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 	}
 	else // classification problem
 	{
+		Log() << kINFO << "[AE Transform] Number of classes: " << numOfClasses << Endl;
+		Log() << kINFO << "[AE Transform] Initial number of variables: " << numOfVariables << Endl;
 		// create array of trees, each tree represents a class
 		const UInt_t N = numOfClasses;
 		TTree *classes[N];
-		Log() << kINFO << "[AE Transform] Looping over transformed variables to set names" << Endl;
 		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
 			varName = "ae_transformed_var";
 			varName += i;
 			varType = varName;
 			varType += "/F";
 
-			Log() << kINFO << "[AE Transform] New varName " << varName << Endl;		
+			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;		
 			for (UInt_t j = 0; j < numOfClasses; j++) {
 				if (i == 0) {// allocate memory to tree pointer
 					classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
-					Log() << kINFO << "[AE Transform] Adding tree with classname " << classes[j]->GetName() << Endl;
 				}
 				classes[j]->Branch(varName, &tranfValues[i], varType);
 			}
@@ -443,9 +447,10 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			cls = ev->GetClass();
 			tranfValues = method->GetLayerActivationValues(ev, indexLayer);
 			classes[cls]->Fill();
-		} 
+		} 			
 		f->Write();
 		f->Close();
+		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;			
 		TFile *transformedData = TFile::Open(newDataSetName);
 		for (UInt_t it = 0; it < numOfClasses; it++){
 			TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
@@ -531,7 +536,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
          {
             Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
             Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;   
-            transformedloader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+            transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
          }
       }  
       Log() << kINFO << "----------------------------------------------------------------" << Endl; 
@@ -563,7 +568,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		TString JobName = "TMVARegression";
 
    		/// Book DNN Method 
-	  	Event::SetIsTraining(kTRUE);  	
+	  	Event::SetIsTraining(kTRUE);
 		gSystem->MakeDirectory(this->GetName());
 		fAnalysisType = Types::kRegression;
 		TString methodTitle = "DNN";
@@ -589,13 +594,12 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		method->CheckSetup();
 
 		// Train DNN Method
-		Log() << kINFO << "Train method: " << method->GetMethodName() << " for Regression" << Endl;
         method->TrainMethod();		
         Log() << kINFO << "Training finished" << Endl;
 
         Int_t indexLayer = 1;
         TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
-        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;        
+        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;                 
         return transformedLoader; 
    }
    else {
