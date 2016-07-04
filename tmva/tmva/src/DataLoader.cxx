@@ -150,8 +150,8 @@ void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x )
    Int_t nvars = DefaultDataSetInfo().GetNVariables();
    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
    std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
-    if( ivar < nvars ){
-       if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
+   if( ivar < nvars ){
+      if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
       if (x > vars[ivar].GetMax()) vars[ivar].SetMax(x);
    }
    else{
@@ -322,25 +322,25 @@ void TMVA::DataLoader::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* s
 
 TTree* TMVA::DataLoader::MakeDataSetTree()
 {
-	TTree *t = new TTree("Dataset", "Contains all events");
-	const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-    UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-	UInt_t nevts = events.size();
-	TString varName, varType;
-	std::vector<Float_t>& values = events[0]->GetValues();
-	for (UInt_t i = 0; i < nvars; i++) {
-		varName = vars[i].GetExpression();
-		varType = varName;
-		varType += "/F";
-		t->Branch(varName, &values[i], varType);
-	}
-	for (UInt_t ievt = 0; ievt < nevts; ievt++)
-	{
-		values = events[ievt]->GetValues();
-		t->Fill();
-	}
-	return t;
+   TTree *t = new TTree("Dataset", "Contains all events");
+   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+   UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+   UInt_t nevts = events.size();
+   TString varName, varType;
+   std::vector<Float_t>& values = events[0]->GetValues();
+   for (UInt_t i = 0; i < nvars; i++) {
+      varName = vars[i].GetExpression();
+      varType = varName;
+      varType += "/F";
+      t->Branch(varName, &values[i], varType);
+   }
+   for (UInt_t ievt = 0; ievt < nevts; ievt++)
+   {
+      values = events[ievt]->GetValues();
+      t->Fill();
+   }
+   return t;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -349,117 +349,117 @@ TTree* TMVA::DataLoader::MakeDataSetTree()
 
 TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLayer)
 {
-	const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-	// get number of variables for new DataLoader
-	TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
-    const Event* ev = events[0];
-	std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-	UInt_t numOfTranfVariables = tranfValues.size();
+   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+   // get number of variables for new DataLoader
+   TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
+   const Event* ev = events[0];
+   std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+   UInt_t numOfTranfVariables = tranfValues.size();
 
-	// create a new dataset file
-    TString newDataSetName = DefaultDataSetInfo().GetName();
-    newDataSetName += "_ae_transformed.root";
-	TFile *f = new TFile(newDataSetName,"RECREATE");
+   // create a new dataset file
+   TString newDataSetName = DefaultDataSetInfo().GetName();
+   newDataSetName += "_ae_transformed.root";
+   TFile *f = new TFile(newDataSetName,"RECREATE");
 
-	// get number of classes
-	const UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
-	const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
-	const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
-	const UInt_t nevts = events.size();
+   // get number of classes
+   const UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
+   const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
+   const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
+   const UInt_t nevts = events.size();
 
-	Log() << kINFO << "[AE Transform] Total number of events: " << nevts << Endl;
+   Log() << kINFO << "[AE Transform] Total number of events: " << nevts << Endl;
 
-	TString varName, tarName, varType, tarType;
-	// it's a regression problem
-	if (numOfTargets != 0)
-	{
-		Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
-		// create a new tree with transformed variables and original targets
-		TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
-		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-			varName = "ae_transformed_var";
-			varName += i;
-			varType = varName;
-			varType += "/F";
+   TString varName, tarName, varType, tarType;
+   // it's a regression problem
+   if (numOfTargets != 0)
+   {
+      Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
+      // create a new tree with transformed variables and original targets
+      TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
+      for (UInt_t i = 0; i < numOfTranfVariables; i++) {
+         varName = "ae_transformed_var";
+         varName += i;
+         varType = varName;
+         varType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
-			R->Branch(varName, &tranfValues[i], varType);
-			transformedLoader->AddVariable(varName, 'F');
-		}
-		std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
-		std::vector<Float_t> targets(numOfTargets);
-		for (UInt_t i = 0; i < numOfTargets; i++) {
-			tarType = tars[i].GetExpression();
-			tarType += "/F";
+         Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
+         R->Branch(varName, &tranfValues[i], varType);
+         transformedLoader->AddVariable(varName, 'F');
+      }
+      std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
+      std::vector<Float_t> targets(numOfTargets);
+      for (UInt_t i = 0; i < numOfTargets; i++) {
+         tarType = tars[i].GetExpression();
+         tarType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;
-			R->Branch(tars[i].GetExpression(), &targets[i], tarType);
-			transformedLoader->AddTarget(tars[i].GetExpression());
-		}
+         Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;
+         R->Branch(tars[i].GetExpression(), &targets[i], tarType);
+         transformedLoader->AddTarget(tars[i].GetExpression());
+      }
 
-		// loop over all events, tranform and add to tree
-		UInt_t itgt;
-		for (UInt_t ievt = 0; ievt < nevts; ievt++) {
-			ev = events[ievt];
-			tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-			for (itgt = 0; itgt < numOfTargets; itgt++)
-				targets[itgt] = ev->GetTarget(itgt);
-			R->Fill();
-		}
-		f->Write();
-		f->Close();
-		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
-		Double_t regWeight = 1.0;
-		TCut myCut = "";
-		TFile *transformedData = TFile::Open(newDataSetName);
-		TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");
-		transformedLoader->AddRegressionTree(s, regWeight);
-		transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
-		transformedData->Close();
-	}
-	else // classification problem
-	{
-		Log() << kINFO << "[AE Transform] Number of classes: " << numOfClasses << Endl;
-		Log() << kINFO << "[AE Transform] Initial number of variables: " << numOfVariables << Endl;
-		// create array of trees, each tree represents a class
-		const UInt_t N = numOfClasses;
-		TTree *classes[N];
-		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-			varName = "ae_transformed_var";
-			varName += i;
-			varType = varName;
-			varType += "/F";
+      // loop over all events, tranform and add to tree
+      UInt_t itgt;
+      for (UInt_t ievt = 0; ievt < nevts; ievt++) {
+         ev = events[ievt];
+         tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+         for (itgt = 0; itgt < numOfTargets; itgt++)
+            targets[itgt] = ev->GetTarget(itgt);
+         R->Fill();
+      }
+      f->Write();
+      f->Close();
+      Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
+      Double_t regWeight = 1.0;
+      TCut myCut = "";
+      TFile *transformedData = TFile::Open(newDataSetName);
+      TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");
+      transformedLoader->AddRegressionTree(s, regWeight);
+      transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
+      transformedData->Close();
+   }
+   else // classification problem
+   {
+      Log() << kINFO << "[AE Transform] Number of classes: " << numOfClasses << Endl;
+      Log() << kINFO << "[AE Transform] Initial number of variables: " << numOfVariables << Endl;
+      // create array of trees, each tree represents a class
+      const UInt_t N = numOfClasses;
+      TTree *classes[N];
+      for (UInt_t i = 0; i < numOfTranfVariables; i++) {
+         varName = "ae_transformed_var";
+         varName += i;
+         varType = varName;
+         varType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
-			for (UInt_t j = 0; j < numOfClasses; j++) {
-				if (i == 0) {// allocate memory to tree pointer
-					classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
-				}
-				classes[j]->Branch(varName, &tranfValues[i], varType);
-			}
-			transformedLoader->AddVariable(varName, 'F');
-		}
+         Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
+         for (UInt_t j = 0; j < numOfClasses; j++) {
+            if (i == 0) {// allocate memory to tree pointer
+               classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
+            }
+            classes[j]->Branch(varName, &tranfValues[i], varType);
+         }
+         transformedLoader->AddVariable(varName, 'F');
+      }
 
-		// loop over all class events, transform and fill the respective trees
-		UInt_t itgt, cls;
-		for (UInt_t ievt = 0; ievt < nevts; ievt++) {
-			ev = events[ievt];
-			cls = ev->GetClass();
-			tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-			classes[cls]->Fill();
-		}
-		f->Write();
-		f->Close();
-		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
-		TFile *transformedData = TFile::Open(newDataSetName);
-		for (UInt_t it = 0; it < numOfClasses; it++){
-			TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
-			transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());
-		}
-		transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
-		transformedData->Close();
-	}
-	return transformedLoader;
+      // loop over all class events, transform and fill the respective trees
+      UInt_t itgt, cls;
+      for (UInt_t ievt = 0; ievt < nevts; ievt++) {
+         ev = events[ievt];
+         cls = ev->GetClass();
+         tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+         classes[cls]->Fill();
+      }
+      f->Write();
+      f->Close();
+      Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
+      TFile *transformedData = TFile::Open(newDataSetName);
+      for (UInt_t it = 0; it < numOfClasses; it++){
+         TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
+         transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());
+      }
+      transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
+      transformedData->Close();
+   }
+   return transformedLoader;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -524,7 +524,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       // iterate over all variables, ignore the ones whose variance is below specific threshold
       TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
       Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
-   	  Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
+      Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
       maxL = maxL + 16;
       Log() << kINFO << "----------------------------------------------------------------" << Endl;
       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
@@ -549,58 +549,58 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
 
-   		// prepare new loader for DNN training
-   		Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
-		TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");
-   		std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-   		const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-		for (UInt_t ivar=0; ivar<nvars; ivar++) {
-			tempLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
-			tempLoader->AddTarget(vars[ivar].GetExpression());
-		}
-		TTree *data = MakeDataSetTree();
-		tempLoader->AddRegressionTree(data, 1.0);
-		tempLoader->PrepareTrainingAndTestTree("","SplitMode=random:!V");
+      // prepare new loader for DNN training
+      Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
+      TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");
+      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+      const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+      for (UInt_t ivar=0; ivar<nvars; ivar++) {
+         tempLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+         tempLoader->AddTarget(vars[ivar].GetExpression());
+      }
+      TTree *data = MakeDataSetTree();
+      tempLoader->AddRegressionTree(data, 1.0);
+      tempLoader->PrepareTrainingAndTestTree("","SplitMode=random:!V");
 
-		// extract names contained in "trOptions"
-		Types::EMVA theMethod = TMVA::Types::kDNN;
-		TString theMethodName = Types::Instance().GetMethodName( theMethod );
-		TString JobName = "TMVARegression";
+      // extract names contained in "trOptions"
+      Types::EMVA theMethod = TMVA::Types::kDNN;
+      TString theMethodName = Types::Instance().GetMethodName( theMethod );
+      TString JobName = "TMVARegression";
 
-   		/// Book DNN Method
-	  	Event::SetIsTraining(kTRUE);
-		gSystem->MakeDirectory(this->GetName());
-		fAnalysisType = Types::kRegression;
-		TString methodTitle = "DNN";
-		IMethod* im;
-		im = ClassifierFactory::Instance().Create( std::string(theMethodName),
-	                                         JobName,
-	                                         methodTitle,
-	                                         tempLoader->DefaultDataSetInfo(),
-	                                         trOptions );
-		MethodDNN *method = dynamic_cast<MethodDNN*>(im);
-		if (method==0)
-		{
-			Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
-			return this;
-		}
-		if (fAnalysisType == Types::kRegression) {
- 			Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
-		}
-		method->SetAnalysisType( fAnalysisType );
-		method->SetupMethod();
-		method->ParseOptions();
-		method->ProcessSetup();
-		method->CheckSetup();
+      // Book DNN Method
+      Event::SetIsTraining(kTRUE);
+      gSystem->MakeDirectory(this->GetName());
+      fAnalysisType = Types::kRegression;
+      TString methodTitle = "DNN";
+      IMethod* im;
+      im = ClassifierFactory::Instance().Create( std::string(theMethodName),
+                                            JobName,
+                                            methodTitle,
+                                            tempLoader->DefaultDataSetInfo(),
+                                            trOptions );
+      MethodDNN *method = dynamic_cast<MethodDNN*>(im);
+      if (method==0)
+      {
+         Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
+         return this;
+      }
+      if (fAnalysisType == Types::kRegression) {
+         Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
+      }
+      method->SetAnalysisType( fAnalysisType );
+      method->SetupMethod();
+      method->ParseOptions();
+      method->ProcessSetup();
+      method->CheckSetup();
 
-		// Train DNN Method
-        method->TrainMethod();
-        Log() << kINFO << "Training finished" << Endl;
+      // Train DNN Method
+      method->TrainMethod();
+      Log() << kINFO << "Training finished" << Endl;
 
-        Int_t indexLayer = 1;
-        TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
-        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
-        return transformedLoader;
+      Int_t indexLayer = 1;
+      TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
+      Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
+      return transformedLoader;
    }
    else {
       Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;
@@ -1033,179 +1033,179 @@ void TMVA::DataLoader::PrepareTrainingAndTestTree( TCut sigcut, TCut bkgcut, con
 //______________________________________________________________________
 void TMVA::DataLoader::PrepareTrainingAndTestTree(int foldNumber, Types::ETreeType tt)
 {
-  DataInput().ClearSignalTreeList();
-  DataInput().ClearBackgroundTreeList();
+   DataInput().ClearSignalTreeList();
+   DataInput().ClearBackgroundTreeList();
 
-  TString CrossValidate = "ParameterOpt";
+   TString CrossValidate = "ParameterOpt";
 
-  int numFolds = fTrainSigTree.size();
+   int numFolds = fTrainSigTree.size();
 
-  for(int i=0; i<numFolds; ++i){
-    if(CrossValidate == "PerformanceEst"){
-      if(i!=foldNumber){
-	AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
-	AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
-	AddTree( fTestSigTree.at(i),      "Signal",     1.0,     TCut(""), Types::kTraining );
-	AddTree( fTestBkgTree.at(i),      "Background", 1.0,     TCut(""), Types::kTraining );
+   for(int i=0; i<numFolds; ++i){
+      if(CrossValidate == "PerformanceEst"){
+         if(i!=foldNumber){
+            AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
+            AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
+            AddTree( fTestSigTree.at(i),      "Signal",     1.0,     TCut(""), Types::kTraining );
+            AddTree( fTestBkgTree.at(i),      "Background", 1.0,     TCut(""), Types::kTraining );
+         }
+         else{
+            AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
+            AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
+            AddTree( fTestSigTree.at(i),      "Signal",     1.0,     TCut(""), Types::kTesting );
+            AddTree( fTestBkgTree.at(i),      "Background", 1.0,     TCut(""), Types::kTesting );
+         }
       }
-      else{
-	AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
-	AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
-	AddTree( fTestSigTree.at(i),      "Signal",     1.0,     TCut(""), Types::kTesting );
-	AddTree( fTestBkgTree.at(i),      "Background", 1.0,     TCut(""), Types::kTesting );
+      else if(CrossValidate == "ParameterOpt"){
+         if(tt == Types::kTraining){
+            if(i!=foldNumber){
+               AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
+               AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
+            }
+            else{
+               AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
+               AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
+            }
+         }
+         else if(tt == Types::kTesting){
+            if(i!=foldNumber){
+               AddTree( fTestSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
+               AddTree( fTestBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
+            }
+            else{
+               AddTree( fTestSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
+               AddTree( fTestBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
+            }
+         }
       }
-    }
-    else if(CrossValidate == "ParameterOpt"){
-      if(tt == Types::kTraining){
-	if(i!=foldNumber){
-	  AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
-	  AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
-	}
-	else{
-	  AddTree( fTrainSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
-	  AddTree( fTrainBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
-	}
-      }
-      else if(tt == Types::kTesting){
-	if(i!=foldNumber){
-	  AddTree( fTestSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTraining );
-	  AddTree( fTestBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTraining );
-	}
-	else{
-	  AddTree( fTestSigTree.at(i),     "Signal",     1.0,     TCut(""), Types::kTesting );
-	  AddTree( fTestBkgTree.at(i),     "Background", 1.0,     TCut(""), Types::kTesting );
-	}
-      }
-    }
-  }
+   }
 
 }
 
 void TMVA::DataLoader::MakeKFoldDataSet(int numberFolds)
 {
 
-  UInt_t nSigTrees = DataInput().GetNSignalTrees();
-  UInt_t nBkgTrees = DataInput().GetNBackgroundTrees();
+   UInt_t nSigTrees = DataInput().GetNSignalTrees();
+   UInt_t nBkgTrees = DataInput().GetNBackgroundTrees();
 
-  if(nSigTrees == 1){
-    std::vector<TTree*> tempSigTrees = SplitSets(DataInput().SignalTreeInfo(0).GetTree(), 1, 2);
-    fTrainSigTree = SplitSets(tempSigTrees.at(0), 0, numberFolds);
-    fTestSigTree = SplitSets(tempSigTrees.at(1), 1, numberFolds);
-  }
-  if(nBkgTrees == 1){
-    std::vector<TTree*> tempBkgTrees = SplitSets(DataInput().BackgroundTreeInfo(0).GetTree(), 1, 2);
-    fTrainBkgTree = SplitSets(tempBkgTrees.at(0), 0, numberFolds);
-    fTestBkgTree = SplitSets(tempBkgTrees.at(1), 1, numberFolds);
-  }
+   if(nSigTrees == 1){
+      std::vector<TTree*> tempSigTrees = SplitSets(DataInput().SignalTreeInfo(0).GetTree(), 1, 2);
+      fTrainSigTree = SplitSets(tempSigTrees.at(0), 0, numberFolds);
+      fTestSigTree = SplitSets(tempSigTrees.at(1), 1, numberFolds);
+   }
+   if(nBkgTrees == 1){
+      std::vector<TTree*> tempBkgTrees = SplitSets(DataInput().BackgroundTreeInfo(0).GetTree(), 1, 2);
+      fTrainBkgTree = SplitSets(tempBkgTrees.at(0), 0, numberFolds);
+      fTestBkgTree = SplitSets(tempBkgTrees.at(1), 1, numberFolds);
+   }
 
-  for(UInt_t i=0; i<nSigTrees; ++i){
-    if(DataInput().SignalTreeInfo(i).GetTreeType() == Types::kTraining){
-      fTrainSigTree = SplitSets(DataInput().SignalTreeInfo(i).GetTree(), i, numberFolds);
-    }
-    else if(DataInput().SignalTreeInfo(i).GetTreeType() == Types::kTesting){
-      fTestSigTree = SplitSets(DataInput().SignalTreeInfo(i).GetTree(), i, numberFolds);
-    }
-  }
-  for(UInt_t j=0; j<nBkgTrees; ++j){
-    if(DataInput().BackgroundTreeInfo(j).GetTreeType() == Types::kTraining){
-      fTrainBkgTree = SplitSets(DataInput().BackgroundTreeInfo(j).GetTree(), j, numberFolds);
-    }
-    else if(DataInput().BackgroundTreeInfo(j).GetTreeType() == Types::kTesting){
-      fTestBkgTree = SplitSets(DataInput().BackgroundTreeInfo(j).GetTree(), j, numberFolds);
-    }
-  }
+   for(UInt_t i=0; i<nSigTrees; ++i){
+      if(DataInput().SignalTreeInfo(i).GetTreeType() == Types::kTraining){
+         fTrainSigTree = SplitSets(DataInput().SignalTreeInfo(i).GetTree(), i, numberFolds);
+      }
+      else if(DataInput().SignalTreeInfo(i).GetTreeType() == Types::kTesting){
+         fTestSigTree = SplitSets(DataInput().SignalTreeInfo(i).GetTree(), i, numberFolds);
+      }
+   }
+   for(UInt_t j=0; j<nBkgTrees; ++j){
+      if(DataInput().BackgroundTreeInfo(j).GetTreeType() == Types::kTraining){
+         fTrainBkgTree = SplitSets(DataInput().BackgroundTreeInfo(j).GetTree(), j, numberFolds);
+      }
+      else if(DataInput().BackgroundTreeInfo(j).GetTreeType() == Types::kTesting){
+         fTestBkgTree = SplitSets(DataInput().BackgroundTreeInfo(j).GetTree(), j, numberFolds);
+      }
+   }
 
-  DataInput().ClearSignalTreeList();
-  DataInput().ClearBackgroundTreeList();
+   DataInput().ClearSignalTreeList();
+   DataInput().ClearBackgroundTreeList();
 
-  nSigTrees = DataInput().GetNSignalTrees();
-  nBkgTrees = DataInput().GetNBackgroundTrees();
+   nSigTrees = DataInput().GetNSignalTrees();
+   nBkgTrees = DataInput().GetNBackgroundTrees();
 
 }
 
 void TMVA::DataLoader::ValidationKFoldSet(){
-  DefaultDataSetInfo().GetDataSet()->DivideTrainingSet(2);
-  DefaultDataSetInfo().GetDataSet()->MoveTrainingBlock(1, Types::kValidation, kTRUE);
+   DefaultDataSetInfo().GetDataSet()->DivideTrainingSet(2);
+   DefaultDataSetInfo().GetDataSet()->MoveTrainingBlock(1, Types::kValidation, kTRUE);
 }
 
 std::vector<TTree*> TMVA::DataLoader::SplitSets(TTree * oldTree, int seedNum, int numFolds)
 {
-  std::vector<TTree*> tempTrees;
+   std::vector<TTree*> tempTrees;
 
-  for(int l=0; l<numFolds; ++l){
-    tempTrees.push_back(oldTree->CloneTree(0));
-    tempTrees.at(l)->SetDirectory(0);
-  }
+   for(int l=0; l<numFolds; ++l){
+      tempTrees.push_back(oldTree->CloneTree(0));
+      tempTrees.at(l)->SetDirectory(0);
+   }
 
-  TRandom3 r(seedNum);
+   TRandom3 r(seedNum);
 
-  Long64_t nEntries = oldTree->GetEntries();
+   Long64_t nEntries = oldTree->GetEntries();
 
-  std::vector<TBranch*> branches;
+   std::vector<TBranch*> branches;
 
-  //TBranch * typeBranch = oldTree->GetBranch("type");
-  //branches.push_back(typeBranch);
-  //oldTree->SetBranchAddress( "type",   &fATreeType);
-  //TBranch * weightBranch = oldTree->GetBranch("weight");
-  //branches.push_back(weightBranch);
-  //oldTree->SetBranchAddress( "weight", &fATreeWeight);
+   //TBranch * typeBranch = oldTree->GetBranch("type");
+   //branches.push_back(typeBranch);
+   //oldTree->SetBranchAddress( "type",   &fATreeType);
+   //TBranch * weightBranch = oldTree->GetBranch("weight");
+   //branches.push_back(weightBranch);
+   //oldTree->SetBranchAddress( "weight", &fATreeWeight);
 
-  std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-  std::vector<VariableInfo>& tgts = DefaultDataSetInfo().GetTargetInfos();
-  std::vector<VariableInfo>& spec = DefaultDataSetInfo().GetSpectatorInfos();
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+   std::vector<VariableInfo>& tgts = DefaultDataSetInfo().GetTargetInfos();
+   std::vector<VariableInfo>& spec = DefaultDataSetInfo().GetSpectatorInfos();
 
-  UInt_t varsSize = vars.size();
+   UInt_t varsSize = vars.size();
 
-  if (!fATreeEvent) fATreeEvent = new Float_t[vars.size()+tgts.size()+spec.size()];
-  // add variables
-  for (UInt_t ivar=0; ivar<vars.size(); ivar++) {
-    TString vname = vars[ivar].GetExpression();
-    if(vars[ivar].GetExpression() != vars[ivar].GetLabel()){
-      varsSize--;
-      continue;
-    }
-    TBranch * branch = oldTree->GetBranch(vname);
-    branches.push_back(branch);
-    oldTree->SetBranchAddress(vname, &(fATreeEvent[ivar]));
-  }
-  // add targets
-  for (UInt_t itgt=0; itgt<tgts.size(); itgt++) {
-    TString vname = tgts[itgt].GetExpression();
-    if(tgts[itgt].GetExpression() != tgts[itgt].GetLabel()){ continue; }
-    TBranch * branch = oldTree->GetBranch(vname);
-    branches.push_back(branch);
-    oldTree->SetBranchAddress( vname, &(fATreeEvent[vars.size()+itgt]));
-  }
-  // add spectators
-  for (UInt_t ispc=0; ispc<spec.size(); ispc++) {
-    TString vname = spec[ispc].GetExpression();
-    if(spec[ispc].GetExpression() != spec[ispc].GetLabel()){ continue; }
-    TBranch * branch = oldTree->GetBranch(vname);
-    branches.push_back(branch);
-    oldTree->SetBranchAddress( vname, &(fATreeEvent[vars.size()+tgts.size()+ispc]));
-  }
-
-  Long64_t foldSize = nEntries/numFolds;
-  Long64_t inSet = 0;
-
-  for(Long64_t i=0; i<nEntries; i++){
-    for(UInt_t j=0; j<vars.size(); j++){ fATreeEvent[j]=0; }
-    oldTree->GetEvent(i);
-    bool inTree = false;
-    if(inSet == foldSize*numFolds){
-      break;
-    }
-    else{
-      while(!inTree){
-	int s = r.Integer(numFolds);
-	if(tempTrees.at(s)->GetEntries()<foldSize){
-	  tempTrees.at(s)->Fill();
-	  inSet++;
-	  inTree=true;
-	}
+   if (!fATreeEvent) fATreeEvent = new Float_t[vars.size()+tgts.size()+spec.size()];
+   // add variables
+   for (UInt_t ivar=0; ivar<vars.size(); ivar++) {
+      TString vname = vars[ivar].GetExpression();
+      if(vars[ivar].GetExpression() != vars[ivar].GetLabel()){
+         varsSize--;
+         continue;
       }
-    }
-  }
+      TBranch * branch = oldTree->GetBranch(vname);
+      branches.push_back(branch);
+      oldTree->SetBranchAddress(vname, &(fATreeEvent[ivar]));
+   }
+   // add targets
+   for (UInt_t itgt=0; itgt<tgts.size(); itgt++) {
+      TString vname = tgts[itgt].GetExpression();
+      if(tgts[itgt].GetExpression() != tgts[itgt].GetLabel()){ continue; }
+      TBranch * branch = oldTree->GetBranch(vname);
+      branches.push_back(branch);
+      oldTree->SetBranchAddress( vname, &(fATreeEvent[vars.size()+itgt]));
+   }
+   // add spectators
+   for (UInt_t ispc=0; ispc<spec.size(); ispc++) {
+      TString vname = spec[ispc].GetExpression();
+      if(spec[ispc].GetExpression() != spec[ispc].GetLabel()){ continue; }
+      TBranch * branch = oldTree->GetBranch(vname);
+      branches.push_back(branch);
+      oldTree->SetBranchAddress( vname, &(fATreeEvent[vars.size()+tgts.size()+ispc]));
+   }
 
-  return tempTrees;
+   Long64_t foldSize = nEntries/numFolds;
+   Long64_t inSet = 0;
+
+   for(Long64_t i=0; i<nEntries; i++){
+      for(UInt_t j=0; j<vars.size(); j++){ fATreeEvent[j]=0; }
+         oldTree->GetEvent(i);
+      bool inTree = false;
+      if(inSet == foldSize*numFolds){
+         break;
+      }
+      else{
+         while(!inTree){
+            int s = r.Integer(numFolds);
+            if(tempTrees.at(s)->GetEntries()<foldSize){
+               tempTrees.at(s)->Fill();
+               inSet++;
+               inTree=true;
+            }
+         }
+      }
+   }
+
+   return tempTrees;
 }
