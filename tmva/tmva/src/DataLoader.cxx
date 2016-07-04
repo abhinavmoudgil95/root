@@ -584,9 +584,6 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
          Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
          return this;
       }
-      if (fAnalysisType == Types::kRegression) {
-         Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
-      }
       method->SetAnalysisType( fAnalysisType );
       method->SetupMethod();
       method->ParseOptions();
