@@ -1,4 +1,4 @@
-// @(#)root/tmva $Id$   
+// @(#)root/tmva $Id$
 // Author: Omar Zapata
 // Mentors: Lorenzo Moneta, Sergei Gleyzer
 //NOTE: Based on TMVA::Factory
@@ -57,7 +57,7 @@
 #include "TMVA/DataSetInfo.h"
 #include "TMVA/MethodBoost.h"
 #include "TMVA/MethodCategory.h"
-#include "TMVA/ClassifierFactory.h" 
+#include "TMVA/ClassifierFactory.h"
 
 #include "TMVA/VariableIdentityTransform.h"
 #include "TMVA/VariableDecorrTransform.h"
@@ -84,7 +84,7 @@ TMVA::DataLoader::DataLoader( TString thedlName)
    fTransformations      ( "I" ),
    fVerbose              ( kFALSE ),
    fName                 ( thedlName ),
-   fCalcNorm             ( kFALSE ),   
+   fCalcNorm             ( kFALSE ),
    fDataAssignType       ( kAssignEvents ),
    fATreeEvent           ( NULL )
 {
@@ -132,7 +132,7 @@ TMVA::DataSetInfo& TMVA::DataLoader::AddDataSet( const TString& dsiName )
    DataSetInfo* dsi = fDataSetManager->GetDataSetInfo(dsiName); // DSMTEST
 
    if (dsi!=0) return *dsi;
-   
+
    return fDataSetManager->AddDataSetInfo(*(new DataSetInfo(dsiName))); // DSMTEST
 }
 
@@ -145,11 +145,11 @@ TMVA::DataSetInfo& TMVA::DataLoader::GetDataSetInfo()
 ////////////////////////////////////////////////////////////////////////////////
 /// Updates maximum and minimum value of a variable or target
 
-void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x ) 
+void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x )
 {
    Int_t nvars = DefaultDataSetInfo().GetNVariables();
-   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
-   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();      
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
     if( ivar < nvars ){
        if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
       if (x > vars[ivar].GetMax()) vars[ivar].SetMax(x);
@@ -161,23 +161,23 @@ void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x )
  }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Computes maximum, minimum, mean, RMS and variance for all 
+/// Computes maximum, minimum, mean, RMS and variance for all
 /// variables and targets
 
-void TMVA::DataLoader::CalcNorm() 
+void TMVA::DataLoader::CalcNorm()
 {
    fCalcNorm = kTRUE;
    const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
 
    const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
    const UInt_t ntgts = DefaultDataSetInfo().GetNTargets();
-   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
-   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();    
+   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
 
    UInt_t nevts = events.size();
 
    TVectorD x2( nvars+ntgts ); x2 *= 0;
-   TVectorD x0( nvars+ntgts ); x0 *= 0;  
+   TVectorD x0( nvars+ntgts ); x0 *= 0;
    TVectorD v0( nvars+ntgts ); v0 *= 0;
 
    Double_t sumOfWeights = 0;
@@ -191,7 +191,7 @@ void TMVA::DataLoader::CalcNorm()
          if (ievt==0) {
             vars[ivar].SetMin(x);
             vars[ivar].SetMax(x);
-         } 
+         }
          else {
             UpdateNorm(ivar,  x );
          }
@@ -203,7 +203,7 @@ void TMVA::DataLoader::CalcNorm()
          if (ievt==0) {
             tars[itgt].SetMin(x);
             tars[itgt].SetMax(x);
-         } 
+         }
          else {
             UpdateNorm( nvars+itgt,  x );
          }
@@ -215,15 +215,15 @@ void TMVA::DataLoader::CalcNorm()
    if (sumOfWeights <= 0) {
       Log() << kFATAL << " the sum of event weights calcualted for your input is == 0"
             << " or exactly: " << sumOfWeights << " there is obviously some problem..."<< Endl;
-   } 
+   }
 
    // set Mean and RMS
    for (UInt_t ivar=0; ivar<nvars; ivar++) {
       Double_t mean = x0(ivar)/sumOfWeights;
-      
-      vars[ivar].SetMean( mean ); 
+
+      vars[ivar].SetMean( mean );
       if (x2(ivar)/sumOfWeights - mean*mean < 0) {
-         Log() << kFATAL << " the RMS of your input variable " << ivar 
+         Log() << kFATAL << " the RMS of your input variable " << ivar
                << " evaluates to an imaginary number: sqrt("<< x2(ivar)/sumOfWeights - mean*mean
                <<") .. sometimes related to a problem with outliers and negative event weights"
                << Endl;
@@ -232,9 +232,9 @@ void TMVA::DataLoader::CalcNorm()
    }
    for (UInt_t itgt=0; itgt<ntgts; itgt++) {
       Double_t mean = x0(nvars+itgt)/sumOfWeights;
-      tars[itgt].SetMean( mean ); 
+      tars[itgt].SetMean( mean );
       if (x2(nvars+itgt)/sumOfWeights - mean*mean < 0) {
-         Log() << kFATAL << " the RMS of your target variable " << itgt 
+         Log() << kFATAL << " the RMS of your target variable " << itgt
                << " evaluates to an imaginary number: sqrt(" << x2(nvars+itgt)/sumOfWeights - mean*mean
                <<") .. sometimes related to a problem with outliers and negative event weights"
                << Endl;
@@ -244,7 +244,7 @@ void TMVA::DataLoader::CalcNorm()
 
    // calculate variance
    for (UInt_t ievt=0; ievt<nevts; ievt++) {
-      const Event* ev = events[ievt];  
+      const Event* ev = events[ievt];
       Double_t weight = ev->GetWeight();
 
       for (UInt_t ivar=0; ivar<nvars; ivar++) {
@@ -258,36 +258,36 @@ void TMVA::DataLoader::CalcNorm()
          Double_t mean = tars[itgt].GetMean();
          v0(nvars+itgt) += weight*(x-mean)*(x-mean);
       }
-   }  
+   }
 
    Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
    maxL = maxL + 8;
    Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Variables";  
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;   
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Variables";
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
    Log() << kINFO << "----------------------------------------------------------------" << Endl;
 
-   // set variance  
+   // set variance
    Log() << std::setprecision(5);
    for (UInt_t ivar=0; ivar<nvars; ivar++) {
       Double_t variance = v0(ivar)/sumOfWeights;
-      vars[ivar].SetVariance( variance ); 
+      vars[ivar].SetVariance( variance );
       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;      
-   } 
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
+   }
 
    maxL = DefaultDataSetInfo().GetTargetNameMaxLength();
    maxL = maxL + 8;
    Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Targets";  
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;   
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Targets";
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
    Log() << kINFO << "----------------------------------------------------------------" << Endl;
 
    for (UInt_t itgt=0; itgt<ntgts; itgt++) {
       Double_t variance = v0(nvars+itgt)/sumOfWeights;
-      tars[itgt].SetVariance( variance ); 
+      tars[itgt].SetVariance( variance );
       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << tars[itgt].GetExpression();
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;          
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
    }
 
    Log() << kINFO << "Set minNorm/maxNorm for variables to: " << Endl;
@@ -300,7 +300,7 @@ void TMVA::DataLoader::CalcNorm()
    for (UInt_t itgt=0; itgt<ntgts; itgt++)
       Log() << "    " << tars[itgt].GetExpression()
             << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
-   Log() << std::setprecision(5); // reset to better value       
+   Log() << std::setprecision(5); // reset to better value
 }
 
 //_______________________________________________________________________
@@ -322,19 +322,19 @@ void TMVA::DataLoader::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* s
 
 TTree* TMVA::DataLoader::MakeDataSetTree()
 {
-	TTree *t = new TTree("Dataset", "Contains all events"); 
+	TTree *t = new TTree("Dataset", "Contains all events");
 	const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos(); 
-    UInt_t nvars = DefaultDataSetInfo().GetNVariables(); 	
+    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+    UInt_t nvars = DefaultDataSetInfo().GetNVariables();
 	UInt_t nevts = events.size();
 	TString varName, varType;
-	std::vector<Float_t>& values = events[0]->GetValues(); 
+	std::vector<Float_t>& values = events[0]->GetValues();
 	for (UInt_t i = 0; i < nvars; i++) {
 		varName = vars[i].GetExpression();
 		varType = varName;
 		varType += "/F";
 		t->Branch(varName, &values[i], varType);
-	}	
+	}
 	for (UInt_t ievt = 0; ievt < nevts; ievt++)
 	{
 		values = events[ievt]->GetValues();
@@ -356,7 +356,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 	std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
 	UInt_t numOfTranfVariables = tranfValues.size();
 
-	// create a new dataset file 
+	// create a new dataset file
     TString newDataSetName = DefaultDataSetInfo().GetName();
     newDataSetName += "_ae_transformed.root";
 	TFile *f = new TFile(newDataSetName,"RECREATE");
@@ -373,7 +373,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 	// it's a regression problem
 	if (numOfTargets != 0)
 	{
-		Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;		
+		Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
 		// create a new tree with transformed variables and original targets
 		TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
 		for (UInt_t i = 0; i < numOfTranfVariables; i++) {
@@ -382,17 +382,17 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			varType = varName;
 			varType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;				
+			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
 			R->Branch(varName, &tranfValues[i], varType);
 			transformedLoader->AddVariable(varName, 'F');
 		}
-		std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();  
-		std::vector<Float_t> targets(numOfTargets);  
+		std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
+		std::vector<Float_t> targets(numOfTargets);
 		for (UInt_t i = 0; i < numOfTargets; i++) {
 			tarType = tars[i].GetExpression();
 			tarType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;				
+			Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;
 			R->Branch(tars[i].GetExpression(), &targets[i], tarType);
 			transformedLoader->AddTarget(tars[i].GetExpression());
 		}
@@ -405,14 +405,14 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			for (itgt = 0; itgt < numOfTargets; itgt++)
 				targets[itgt] = ev->GetTarget(itgt);
 			R->Fill();
-		}		  		
+		}
 		f->Write();
 		f->Close();
-		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;		
+		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
 		Double_t regWeight = 1.0;
 		TCut myCut = "";
 		TFile *transformedData = TFile::Open(newDataSetName);
-		TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");				
+		TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");
 		transformedLoader->AddRegressionTree(s, regWeight);
 		transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
 		transformedData->Close();
@@ -430,7 +430,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			varType = varName;
 			varType += "/F";
 
-			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;		
+			Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
 			for (UInt_t j = 0; j < numOfClasses; j++) {
 				if (i == 0) {// allocate memory to tree pointer
 					classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
@@ -447,14 +447,14 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 			cls = ev->GetClass();
 			tranfValues = method->GetLayerActivationValues(ev, indexLayer);
 			classes[cls]->Fill();
-		} 			
+		}
 		f->Write();
 		f->Close();
-		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;			
+		Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
 		TFile *transformedData = TFile::Open(newDataSetName);
 		for (UInt_t it = 0; it < numOfClasses; it++){
 			TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
-			transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());	
+			transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());
 		}
 		transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
 		transformedData->Close();
@@ -463,17 +463,17 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Computes variance of all the variables and 
-/// returns a new DataLoader with the selected variables whose variance is above a specific threshold. 
-/// Threshold can be provided by user otherwise default value is 0 i.e. remove the variables which have same value in all 
-/// the events. 
-/// 
+/// Computes variance of all the variables and
+/// returns a new DataLoader with the selected variables whose variance is above a specific threshold.
+/// Threshold can be provided by user otherwise default value is 0 i.e. remove the variables which have same value in all
+/// the events.
+///
 /// \param[in] trafoDefinition Tranformation Definition String
 ///
 /// Transformation Definition String Format: "VT(optional float value)"
-/// 
-/// Usage examples: 
-/// 
+///
+/// Usage examples:
+///
 /// String    | Description
 /// -------   |----------------------------------------
 /// "VT"      | Select variables whose variance is above threshold value = 0 (Default)
@@ -483,7 +483,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 {
    TString trOptions = "0";
    TString trName = "None";
-   if (trafoDefinition.Contains("(")) { 
+   if (trafoDefinition.Contains("(")) {
 
       // contains transformation parameters
       Ssiz_t parStart = trafoDefinition.Index( "(" );
@@ -492,7 +492,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       trName = trafoDefinition(0,parStart);
       trOptions = trafoDefinition(parStart,parLen);
       trOptions.Remove(parLen-1,1);
-      trOptions.Remove(0,1);       
+      trOptions.Remove(0,1);
    }
    else
       trName = trafoDefinition;
@@ -503,12 +503,12 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       // find threshold value from given input
       Double_t threshold = 0.0;
       if (!trOptions.IsFloat()){
-         Log() << kFATAL << " VT transformation must be passed a floating threshold value" << Endl; 
+         Log() << kFATAL << " VT transformation must be passed a floating threshold value" << Endl;
          return this;
       }
       else
-         threshold =  trOptions.Atof();      
-      Log() << kINFO << "Transformation: " << trName << Endl; 
+         threshold =  trOptions.Atof();
+      Log() << kINFO << "Transformation: " << trName << Endl;
       Log() << kINFO << "Threshold value: " << threshold << Endl;
 
       // calculate variance of variables if not done already
@@ -517,29 +517,29 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
       // get variable info
       const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-      Log() << kINFO << "Number of variables before transformation: " << nvars << Endl; 
-      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();   
+      Log() << kINFO << "Number of variables before transformation: " << nvars << Endl;
+      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
 
       // return a new dataloader
-      // iterate over all variables, ignore the ones whose variance is below specific threshold 
+      // iterate over all variables, ignore the ones whose variance is below specific threshold
       TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
-      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;  
+      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
    	  Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
-      maxL = maxL + 16;       
+      maxL = maxL + 16;
       Log() << kINFO << "----------------------------------------------------------------" << Endl;
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";  
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;         
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
+      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
       Log() << kINFO << "----------------------------------------------------------------" << Endl;
       for (UInt_t ivar=0; ivar<nvars; ivar++) {
          Double_t variance =  vars[ivar].GetVariance();
          if (variance > threshold)
          {
             Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
-            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;   
+            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
             transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
          }
-      }  
-      Log() << kINFO << "----------------------------------------------------------------" << Endl; 
+      }
+      Log() << kINFO << "----------------------------------------------------------------" << Endl;
       CopyDataLoader(transformedLoader,this);
       transformedLoader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
       Log() << kINFO << "Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;
@@ -549,15 +549,15 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
 
-   		// prepare new loader for DNN training 
+   		// prepare new loader for DNN training
    		Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
-		TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");   		
-   		std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();  
+		TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");
+   		std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
    		const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
 		for (UInt_t ivar=0; ivar<nvars; ivar++) {
 			tempLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
 			tempLoader->AddTarget(vars[ivar].GetExpression());
-		}		
+		}
 		TTree *data = MakeDataSetTree();
 		tempLoader->AddRegressionTree(data, 1.0);
 		tempLoader->PrepareTrainingAndTestTree("","SplitMode=random:!V");
@@ -567,12 +567,12 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		TString theMethodName = Types::Instance().GetMethodName( theMethod );
 		TString JobName = "TMVARegression";
 
-   		/// Book DNN Method 
+   		/// Book DNN Method
 	  	Event::SetIsTraining(kTRUE);
 		gSystem->MakeDirectory(this->GetName());
 		fAnalysisType = Types::kRegression;
 		TString methodTitle = "DNN";
-		IMethod* im;		
+		IMethod* im;
 		im = ClassifierFactory::Instance().Create( std::string(theMethodName),
 	                                         JobName,
 	                                         methodTitle,
@@ -581,12 +581,12 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		MethodDNN *method = dynamic_cast<MethodDNN*>(im);
 		if (method==0)
 		{
-			Log() << kINFO << "------------------------method = 0----------------------------" << Endl; 
+			Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
 			return this;
-		} 
+		}
 		if (fAnalysisType == Types::kRegression) {
  			Log() << "Regression with " << DefaultDataSetInfo().GetNTargets() << " targets." << Endl;
-		} 
+		}
 		method->SetAnalysisType( fAnalysisType );
 		method->SetupMethod();
 		method->ParseOptions();
@@ -594,13 +594,13 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 		method->CheckSetup();
 
 		// Train DNN Method
-        method->TrainMethod();		
+        method->TrainMethod();
         Log() << kINFO << "Training finished" << Endl;
 
         Int_t indexLayer = 1;
         TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
-        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;                 
-        return transformedLoader; 
+        Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
+        return transformedLoader;
    }
    else {
       Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;
@@ -610,7 +610,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 }
 
 // ________________________________________________
-// the next functions are to assign events directly 
+// the next functions are to assign events directly
 
 //_______________________________________________________________________
 TTree* TMVA::DataLoader::CreateEventAssignTrees( const TString& name )
@@ -645,42 +645,42 @@ TTree* TMVA::DataLoader::CreateEventAssignTrees( const TString& name )
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddSignalTrainingEvent( const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddSignalTrainingEvent( const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal training event
    AddEvent( "Signal", Types::kTraining, event, weight );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddSignalTestEvent( const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddSignalTestEvent( const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal testing event
    AddEvent( "Signal", Types::kTesting, event, weight );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddBackgroundTrainingEvent( const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddBackgroundTrainingEvent( const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal training event
    AddEvent( "Background", Types::kTraining, event, weight );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddBackgroundTestEvent( const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddBackgroundTestEvent( const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal training event
    AddEvent( "Background", Types::kTesting, event, weight );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddTrainingEvent( const TString& className, const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddTrainingEvent( const TString& className, const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal training event
    AddEvent( className, Types::kTraining, event, weight );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddTestEvent( const TString& className, const std::vector<Double_t>& event, Double_t weight ) 
+void TMVA::DataLoader::AddTestEvent( const TString& className, const std::vector<Double_t>& event, Double_t weight )
 {
    // add signal test event
    AddEvent( className, Types::kTesting, event, weight );
@@ -688,7 +688,7 @@ void TMVA::DataLoader::AddTestEvent( const TString& className, const std::vector
 
 //_______________________________________________________________________
 void TMVA::DataLoader::AddEvent( const TString& className, Types::ETreeType tt,
-                                 const std::vector<Double_t>& event, Double_t weight ) 
+                                 const std::vector<Double_t>& event, Double_t weight )
 {
    // add event
    // vector event : the order of values is: variables + targets + spectators
@@ -700,7 +700,7 @@ void TMVA::DataLoader::AddEvent( const TString& className, Types::ETreeType tt,
    if( fAnalysisType == Types::kNoAnalysisType && DefaultDataSetInfo().GetNClasses() > 2 )
       fAnalysisType = Types::kMulticlass;
 
-   
+
    if (clIndex>=fTrainAssignTree.size()) {
       fTrainAssignTree.resize(clIndex+1, 0);
       fTestAssignTree.resize(clIndex+1, 0);
@@ -710,7 +710,7 @@ void TMVA::DataLoader::AddEvent( const TString& className, Types::ETreeType tt,
       fTrainAssignTree[clIndex] = CreateEventAssignTrees( Form("TrainAssignTree_%s", className.Data()) );
       fTestAssignTree[clIndex]  = CreateEventAssignTrees( Form("TestAssignTree_%s",  className.Data()) );
    }
-   
+
    fATreeType   = clIndex;
    fATreeWeight = weight;
    for (UInt_t ivar=0; ivar<event.size(); ivar++) fATreeEvent[ivar] = event[ivar];
@@ -721,9 +721,9 @@ void TMVA::DataLoader::AddEvent( const TString& className, Types::ETreeType tt,
 }
 
 //_______________________________________________________________________
-Bool_t TMVA::DataLoader::UserAssignEvents(UInt_t clIndex) 
+Bool_t TMVA::DataLoader::UserAssignEvents(UInt_t clIndex)
 {
-   // 
+   //
    return fTrainAssignTree[clIndex]!=0;
 }
 
@@ -742,7 +742,7 @@ void TMVA::DataLoader::SetInputTreesFromEventAssignTrees()
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t weight, 
+void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t weight,
                                 const TCut& cut, const TString& treetype )
 {
    // number of signal events (used to compute significance)
@@ -752,14 +752,14 @@ void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t 
    else if (tmpTreeType.Contains( "train" ))                                   tt = Types::kTraining;
    else if (tmpTreeType.Contains( "test" ))                                    tt = Types::kTesting;
    else {
-      Log() << kFATAL << "<AddTree> cannot interpret tree type: \"" << treetype 
+      Log() << kFATAL << "<AddTree> cannot interpret tree type: \"" << treetype
             << "\" should be \"Training\" or \"Test\" or \"Training and Testing\"" << Endl;
    }
    AddTree( tree, className, weight, cut, tt );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t weight, 
+void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t weight,
                                 const TCut& cut, Types::ETreeType tt )
 {
    if(!tree)
@@ -771,7 +771,7 @@ void TMVA::DataLoader::AddTree( TTree* tree, const TString& className, Double_t 
    if( fAnalysisType == Types::kNoAnalysisType && DefaultDataSetInfo().GetNClasses() > 2 )
       fAnalysisType = Types::kMulticlass;
 
-   Log() << kINFO << "Add Tree " << tree->GetName() << " of type " << className 
+   Log() << kINFO << "Add Tree " << tree->GetName() << " of type " << className
          << " with " << tree->GetEntries() << " events" << Endl;
    DataInput().AddTree( tree, className, weight, cut, tt );
 }
@@ -791,10 +791,10 @@ void TMVA::DataLoader::AddSignalTree( TString datFileS, Double_t weight, Types::
    // create trees from these ascii files
    TTree* signalTree = new TTree( "TreeS", "Tree (S)" );
    signalTree->ReadFile( datFileS );
- 
+
    Log() << kINFO << "Create TTree objects from ASCII input files ... \n- Signal file    : \""
          << datFileS << Endl;
-  
+
    // number of signal events (used to compute significance)
    AddTree( signalTree, "Signal", weight, TCut(""), treetype );
 }
@@ -819,10 +819,10 @@ void TMVA::DataLoader::AddBackgroundTree( TString datFileB, Double_t weight, Typ
    // create trees from these ascii files
    TTree* bkgTree = new TTree( "TreeB", "Tree (B)" );
    bkgTree->ReadFile( datFileB );
- 
+
    Log() << kINFO << "Create TTree objects from ASCII input files ... \n- Background file    : \""
          << datFileB << Endl;
-  
+
    // number of signal events (used to compute significance)
    AddTree( bkgTree, "Background", weight, TCut(""), treetype );
 }
@@ -853,7 +853,7 @@ void TMVA::DataLoader::SetTree( TTree* tree, const TString& className, Double_t 
 }
 
 //_______________________________________________________________________
-void  TMVA::DataLoader::SetInputTrees( TTree* signal, TTree* background, 
+void  TMVA::DataLoader::SetInputTrees( TTree* signal, TTree* background,
                                        Double_t signalWeight, Double_t backgroundWeight )
 {
    // define the input trees for signal and background; no cuts are applied
@@ -862,7 +862,7 @@ void  TMVA::DataLoader::SetInputTrees( TTree* signal, TTree* background,
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetInputTrees( const TString& datFileS, const TString& datFileB, 
+void TMVA::DataLoader::SetInputTrees( const TString& datFileS, const TString& datFileB,
                                       Double_t signalWeight, Double_t backgroundWeight )
 {
    DataInput().AddTree( datFileS, "Signal", signalWeight );
@@ -873,18 +873,18 @@ void TMVA::DataLoader::SetInputTrees( const TString& datFileS, const TString& da
 void TMVA::DataLoader::SetInputTrees( TTree* inputTree, const TCut& SigCut, const TCut& BgCut )
 {
    // define the input trees for signal and background from single input tree,
-   // containing both signal and background events distinguished by the type 
+   // containing both signal and background events distinguished by the type
    // identifiers: SigCut and BgCut
    AddTree( inputTree, "Signal",     1.0, SigCut, Types::kMaxTreeType );
    AddTree( inputTree, "Background", 1.0, BgCut , Types::kMaxTreeType );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddVariable( const TString& expression, const TString& title, const TString& unit, 
+void TMVA::DataLoader::AddVariable( const TString& expression, const TString& title, const TString& unit,
                                     char type, Double_t min, Double_t max )
 {
    // user inserts discriminating variable in data set info
-   DefaultDataSetInfo().AddVariable( expression, title, unit, min, max, type ); 
+   DefaultDataSetInfo().AddVariable( expression, title, unit, min, max, type );
 }
 
 //_______________________________________________________________________
@@ -892,11 +892,11 @@ void TMVA::DataLoader::AddVariable( const TString& expression, char type,
                                     Double_t min, Double_t max )
 {
    // user inserts discriminating variable in data set info
-   DefaultDataSetInfo().AddVariable( expression, "", "", min, max, type ); 
+   DefaultDataSetInfo().AddVariable( expression, "", "", min, max, type );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddTarget( const TString& expression, const TString& title, const TString& unit, 
+void TMVA::DataLoader::AddTarget( const TString& expression, const TString& title, const TString& unit,
                                   Double_t min, Double_t max )
 {
    // user inserts target in data set info
@@ -904,52 +904,52 @@ void TMVA::DataLoader::AddTarget( const TString& expression, const TString& titl
    if( fAnalysisType == Types::kNoAnalysisType )
       fAnalysisType = Types::kRegression;
 
-   DefaultDataSetInfo().AddTarget( expression, title, unit, min, max ); 
+   DefaultDataSetInfo().AddTarget( expression, title, unit, min, max );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddSpectator( const TString& expression, const TString& title, const TString& unit, 
+void TMVA::DataLoader::AddSpectator( const TString& expression, const TString& title, const TString& unit,
                                      Double_t min, Double_t max )
 {
    // user inserts target in data set info
-   DefaultDataSetInfo().AddSpectator( expression, title, unit, min, max ); 
+   DefaultDataSetInfo().AddSpectator( expression, title, unit, min, max );
 }
 
 //_______________________________________________________________________
-TMVA::DataSetInfo& TMVA::DataLoader::DefaultDataSetInfo() 
-{ 
+TMVA::DataSetInfo& TMVA::DataLoader::DefaultDataSetInfo()
+{
    // default creation
    return AddDataSet( fName );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetInputVariables( std::vector<TString>* theVariables ) 
-{ 
+void TMVA::DataLoader::SetInputVariables( std::vector<TString>* theVariables )
+{
    // fill input variables in data set
    for (std::vector<TString>::iterator it=theVariables->begin();
         it!=theVariables->end(); it++) AddVariable(*it);
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetSignalWeightExpression( const TString& variable)  
-{ 
-   DefaultDataSetInfo().SetWeightExpression(variable, "Signal"); 
+void TMVA::DataLoader::SetSignalWeightExpression( const TString& variable)
+{
+   DefaultDataSetInfo().SetWeightExpression(variable, "Signal");
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetBackgroundWeightExpression( const TString& variable) 
+void TMVA::DataLoader::SetBackgroundWeightExpression( const TString& variable)
 {
    DefaultDataSetInfo().SetWeightExpression(variable, "Background");
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetWeightExpression( const TString& variable, const TString& className )  
+void TMVA::DataLoader::SetWeightExpression( const TString& variable, const TString& className )
 {
    //Log() << kWarning << DefaultDataSetInfo().GetNClasses() /*fClasses.size()*/ << Endl;
    if (className=="") {
       SetSignalWeightExpression(variable);
       SetBackgroundWeightExpression(variable);
-   } 
+   }
    else  DefaultDataSetInfo().SetWeightExpression( variable, className );
 }
 
@@ -959,25 +959,25 @@ void TMVA::DataLoader::SetCut( const TString& cut, const TString& className ) {
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::SetCut( const TCut& cut, const TString& className ) 
+void TMVA::DataLoader::SetCut( const TCut& cut, const TString& className )
 {
    DefaultDataSetInfo().SetCut( cut, className );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddCut( const TString& cut, const TString& className ) 
+void TMVA::DataLoader::AddCut( const TString& cut, const TString& className )
 {
    AddCut( TCut(cut), className );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::AddCut( const TCut& cut, const TString& className ) 
+void TMVA::DataLoader::AddCut( const TCut& cut, const TString& className )
 {
    DefaultDataSetInfo().AddCut( cut, className );
 }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::PrepareTrainingAndTestTree( const TCut& cut, 
+void TMVA::DataLoader::PrepareTrainingAndTestTree( const TCut& cut,
                                                    Int_t NsigTrain, Int_t NbkgTrain, Int_t NsigTest, Int_t NbkgTest,
                                                    const TString& otherOpt )
 {
@@ -986,20 +986,20 @@ void TMVA::DataLoader::PrepareTrainingAndTestTree( const TCut& cut,
 
    AddCut( cut  );
 
-   DefaultDataSetInfo().SetSplitOptions( Form("nTrain_Signal=%i:nTrain_Background=%i:nTest_Signal=%i:nTest_Background=%i:%s", 
+   DefaultDataSetInfo().SetSplitOptions( Form("nTrain_Signal=%i:nTrain_Background=%i:nTest_Signal=%i:nTest_Background=%i:%s",
                                               NsigTrain, NbkgTrain, NsigTest, NbkgTest, otherOpt.Data()) );
 }
 
 //_______________________________________________________________________
 void TMVA::DataLoader::PrepareTrainingAndTestTree( const TCut& cut, Int_t Ntrain, Int_t Ntest )
 {
-   // prepare the training and test trees 
+   // prepare the training and test trees
    // kept for backward compatibility
    SetInputTreesFromEventAssignTrees();
 
    AddCut( cut  );
 
-   DefaultDataSetInfo().SetSplitOptions( Form("nTrain_Signal=%i:nTrain_Background=%i:nTest_Signal=%i:nTest_Background=%i:SplitMode=Random:EqualTrainSample:!V", 
+   DefaultDataSetInfo().SetSplitOptions( Form("nTrain_Signal=%i:nTrain_Background=%i:nTest_Signal=%i:nTest_Background=%i:SplitMode=Random:EqualTrainSample:!V",
                                               Ntrain, Ntrain, Ntest, Ntest) );
 }
 
@@ -1083,7 +1083,7 @@ void TMVA::DataLoader::PrepareTrainingAndTestTree(int foldNumber, Types::ETreeTy
 
 void TMVA::DataLoader::MakeKFoldDataSet(int numberFolds)
 {
-  
+
   UInt_t nSigTrees = DataInput().GetNSignalTrees();
   UInt_t nBkgTrees = DataInput().GetNBackgroundTrees();
 
@@ -1162,7 +1162,7 @@ std::vector<TTree*> TMVA::DataLoader::SplitSets(TTree * oldTree, int seedNum, in
     TString vname = vars[ivar].GetExpression();
     if(vars[ivar].GetExpression() != vars[ivar].GetLabel()){
       varsSize--;
-      continue; 
+      continue;
     }
     TBranch * branch = oldTree->GetBranch(vname);
     branches.push_back(branch);
