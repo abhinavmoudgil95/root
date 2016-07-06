@@ -627,7 +627,6 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       method->TrainMethod();
       Log() << kINFO << "Training finished" << Endl;
 
-      Int_t indexLayer = 1;
       TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
       Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
       return transformedLoader;
