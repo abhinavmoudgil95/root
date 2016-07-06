@@ -554,7 +554,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       TObjArray* subOptions = trOptions.Tokenize (';');
       TIter nextToken(subOptions);
       TObjString* token = (TObjString*)nextToken();
-      TString idxLyrOption = token->GetString().Data();
+      TString idxLyrOption = token->GetString();
       if (idxLyrOption.Contains("indexLayer=") && idxLyrOption.ReplaceAll("indexLayer=","").IsFloat()) {
          indexLayer = idxLyrOption.ReplaceAll("indexLayer=","").Atoi();
          Log() << kINFO << "[AE Transform] indexLayer = " << indexLayer << Endl;
@@ -567,7 +567,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
       // get pretraining option
       token = (TObjString*)nextToken();
-      TString pretrainingOption = token->GetString().Data();
+      TString pretrainingOption = token->GetString();
       TString preTrngValue;
       if (!pretrainingOption.Contains("pretraining=")) {
          Log() << kINFO << "[AE Transform] Please check pretraining option! Setting to false by default" << Endl;   
@@ -580,7 +580,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
       // get dnn options
       token = (TObjString*)nextToken();
-      TString dnnOptions = token->GetString().Data();            
+      TString dnnOptions = token->GetString();            
 
       // prepare new loader for DNN training
       Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
