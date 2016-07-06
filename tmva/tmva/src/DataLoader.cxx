@@ -549,6 +549,39 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
 
+      // get indexLayer from option string
+      Int_t indexLayer;
+      TObjArray* subOptions = trOptions.Tokenize (';');
+      TIter nextToken(subOptions);
+      TObjString* token = (TObjString*)nextToken();
+      TString idxLyrOption = token->GetString().Data();
+      if (idxLyrOption.Contains("indexLayer=") && idxLyrOption.ReplaceAll("indexLayer=","").IsFloat()) {
+         indexLayer = idxLyrOption.ReplaceAll("indexLayer=","").Atoi();
+         Log() << kINFO << "[AE Transform] indexLayer = " << indexLayer << Endl;
+
+      }
+      else {
+         Log() << kINFO << "[AE Transform] Please check indexLayer option! Returning original DataLoader" << Endl;
+         return this;
+      }
+
+      // get pretraining option
+      token = (TObjString*)nextToken();
+      TString pretrainingOption = token->GetString().Data();
+      TString preTrngValue;
+      if (!pretrainingOption.Contains("pretraining=")) {
+         Log() << kINFO << "[AE Transform] Please check pretraining option! Setting to false by default" << Endl;   
+         preTrngValue = "false";     
+      }
+      else {
+         preTrngValue = pretrainingOption.ReplaceAll("pretraining=","");
+         Log() << kINFO << "[AE Transform] Pretraining = " << preTrngValue << Endl; 
+      }
+
+      // get dnn options
+      token = (TObjString*)nextToken();
+      TString dnnOptions = token->GetString().Data();            
+
       // prepare new loader for DNN training
       Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
       TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");
@@ -577,7 +610,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
                                             JobName,
                                             methodTitle,
                                             tempLoader->DefaultDataSetInfo(),
-                                            trOptions );
+                                            dnnOptions );
       MethodDNN *method = dynamic_cast<MethodDNN*>(im);
       if (method==0)
       {
