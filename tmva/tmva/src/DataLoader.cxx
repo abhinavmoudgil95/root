@@ -371,6 +371,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
 
    TString varName, tarName, varType, tarType;
    // it's a regression problem
+   // TODO: Add regression trees with weights
    if (numOfTargets != 0)
    {
       Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
@@ -424,6 +425,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
       // create array of trees, each tree represents a class
       const UInt_t N = numOfClasses;
       TTree *classes[N];
+      std::vector<Double_t> treeWeights(N);
       for (UInt_t i = 0; i < numOfTranfVariables; i++) {
          varName = "ae_transformed_var";
          varName += i;
@@ -445,6 +447,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
       for (UInt_t ievt = 0; ievt < nevts; ievt++) {
          ev = events[ievt];
          cls = ev->GetClass();
+         treeWeights[cls] = ev->GetOriginalWeight();
          tranfValues = method->GetLayerActivationValues(ev, indexLayer);
          classes[cls]->Fill();
       }
@@ -454,7 +457,7 @@ TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLa
       TFile *transformedData = TFile::Open(newDataSetName);
       for (UInt_t it = 0; it < numOfClasses; it++){
          TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
-         transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName());
+         transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName(), treeWeights[it]);
       }
       transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
       transformedData->Close();
@@ -584,7 +587,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
 
       // prepare new loader for DNN training
       Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
-      TMVA::DataLoader *tempLoader = new TMVA::DataLoader("temporary_loader_for_training");
+      TMVA::DataLoader *tempLoader = new TMVA::DataLoader("ae_transform_dataset");
       std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
       const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
       for (UInt_t ivar=0; ivar<nvars; ivar++) {
@@ -600,9 +603,9 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       TString theMethodName = Types::Instance().GetMethodName( theMethod );
       TString JobName = "TMVARegression";
 
-      // Book DNN Method
+      // book DNN Method
       Event::SetIsTraining(kTRUE);
-      gSystem->MakeDirectory(this->GetName());
+      gSystem->MakeDirectory(tempLoader->GetName());
       fAnalysisType = Types::kRegression;
       TString methodTitle = "DNN";
       IMethod* im;
@@ -623,10 +626,11 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       method->ProcessSetup();
       method->CheckSetup();
 
-      // Train DNN Method
+      // train DNN Method
       method->TrainMethod();
       Log() << kINFO << "Training finished" << Endl;
 
+      // transform events
       TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
       Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
       return transformedLoader;
