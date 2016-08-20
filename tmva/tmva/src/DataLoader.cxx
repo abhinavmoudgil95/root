@@ -58,6 +58,7 @@
 #include "TMVA/MethodBoost.h"
 #include "TMVA/MethodCategory.h"
 #include "TMVA/ClassifierFactory.h"
+#include "TMVA/VarTransformHandler.h"
 
 #include "TMVA/VariableIdentityTransform.h"
 #include "TMVA/VariableDecorrTransform.h"
@@ -69,12 +70,9 @@
 #include "TMVA/ResultsRegression.h"
 #include "TMVA/ResultsMulticlass.h"
 
-<<<<<<< HEAD
-=======
 #include "TMVA/Types.h"
 //const Int_t  MinNoTrainingEvents = 10;
 //const Int_t  MinNoTestEvents     = 1;
->>>>>>> 5414b2b6b5edde9870aa195d9941d49dc9bc69d1
 
 ClassImp(TMVA::DataLoader)
 
@@ -86,11 +84,8 @@ TMVA::DataLoader::DataLoader( TString thedlName)
    fDataInputHandler     ( new DataInputHandler ),
    fTransformations      ( "I" ),
    fVerbose              ( kFALSE ),
-<<<<<<< HEAD
-=======
    fName                 ( thedlName ),
    fCalcNorm             ( kFALSE ),
->>>>>>> 5414b2b6b5edde9870aa195d9941d49dc9bc69d1
    fDataAssignType       ( kAssignEvents ),
    fATreeEvent           (0)
 {
@@ -146,325 +141,325 @@ TMVA::DataSetInfo& TMVA::DataLoader::GetDataSetInfo()
 ////////////////////////////////////////////////////////////////////////////////
 /// Updates maximum and minimum value of a variable or target
 
-void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x )
-{
-   Int_t nvars = DefaultDataSetInfo().GetNVariables();
-   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
-   if( ivar < nvars ){
-      if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
-      if (x > vars[ivar].GetMax()) vars[ivar].SetMax(x);
-   }
-   else{
-      if (x < tars[ivar-nvars].GetMin()) tars[ivar-nvars].SetMin(x);
-      if (x > tars[ivar-nvars].GetMax()) tars[ivar-nvars].SetMax(x);
-   }
- }
+// void TMVA::DataLoader::UpdateNorm ( Int_t ivar,  Double_t x )
+// {
+//    Int_t nvars = DefaultDataSetInfo().GetNVariables();
+//    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+//    std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
+//    if( ivar < nvars ){
+//       if (x < vars[ivar].GetMin()) vars[ivar].SetMin(x);
+//       if (x > vars[ivar].GetMax()) vars[ivar].SetMax(x);
+//    }
+//    else{
+//       if (x < tars[ivar-nvars].GetMin()) tars[ivar-nvars].SetMin(x);
+//       if (x > tars[ivar-nvars].GetMax()) tars[ivar-nvars].SetMax(x);
+//    }
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Computes maximum, minimum, mean, RMS and variance for all
 /// variables and targets
 
-void TMVA::DataLoader::CalcNorm()
-{
-   fCalcNorm = kTRUE;
-   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+// void TMVA::DataLoader::CalcNorm()
+// {
+//    fCalcNorm = kTRUE;
+//    const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
 
-   const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-   const UInt_t ntgts = DefaultDataSetInfo().GetNTargets();
-   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-   std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
+//    const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+//    const UInt_t ntgts = DefaultDataSetInfo().GetNTargets();
+//    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+//    std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
 
-   UInt_t nevts = events.size();
+//    UInt_t nevts = events.size();
 
-   TVectorD x2( nvars+ntgts ); x2 *= 0;
-   TVectorD x0( nvars+ntgts ); x0 *= 0;
-   TVectorD v0( nvars+ntgts ); v0 *= 0;
+//    TVectorD x2( nvars+ntgts ); x2 *= 0;
+//    TVectorD x0( nvars+ntgts ); x0 *= 0;
+//    TVectorD v0( nvars+ntgts ); v0 *= 0;
 
-   Double_t sumOfWeights = 0;
-   for (UInt_t ievt=0; ievt<nevts; ievt++) {
-      const Event* ev = events[ievt];
+//    Double_t sumOfWeights = 0;
+//    for (UInt_t ievt=0; ievt<nevts; ievt++) {
+//       const Event* ev = events[ievt];
 
-      Double_t weight = ev->GetWeight();
-      sumOfWeights += weight;
-      for (UInt_t ivar=0; ivar<nvars; ivar++) {
-         Double_t x = ev->GetValue(ivar);
-         if (ievt==0) {
-            vars[ivar].SetMin(x);
-            vars[ivar].SetMax(x);
-         }
-         else {
-            UpdateNorm(ivar,  x );
-         }
-         x0(ivar) += x*weight;
-         x2(ivar) += x*x*weight;
-      }
-      for (UInt_t itgt=0; itgt<ntgts; itgt++) {
-         Double_t x = ev->GetTarget(itgt);
-         if (ievt==0) {
-            tars[itgt].SetMin(x);
-            tars[itgt].SetMax(x);
-         }
-         else {
-            UpdateNorm( nvars+itgt,  x );
-         }
-         x0(nvars+itgt) += x*weight;
-         x2(nvars+itgt) += x*x*weight;
-      }
-   }
+//       Double_t weight = ev->GetWeight();
+//       sumOfWeights += weight;
+//       for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//          Double_t x = ev->GetValue(ivar);
+//          if (ievt==0) {
+//             vars[ivar].SetMin(x);
+//             vars[ivar].SetMax(x);
+//          }
+//          else {
+//             UpdateNorm(ivar,  x );
+//          }
+//          x0(ivar) += x*weight;
+//          x2(ivar) += x*x*weight;
+//       }
+//       for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+//          Double_t x = ev->GetTarget(itgt);
+//          if (ievt==0) {
+//             tars[itgt].SetMin(x);
+//             tars[itgt].SetMax(x);
+//          }
+//          else {
+//             UpdateNorm( nvars+itgt,  x );
+//          }
+//          x0(nvars+itgt) += x*weight;
+//          x2(nvars+itgt) += x*x*weight;
+//       }
+//    }
 
-   if (sumOfWeights <= 0) {
-      Log() << kFATAL << " the sum of event weights calcualted for your input is == 0"
-            << " or exactly: " << sumOfWeights << " there is obviously some problem..."<< Endl;
-   }
+//    if (sumOfWeights <= 0) {
+//       Log() << kFATAL << " the sum of event weights calcualted for your input is == 0"
+//             << " or exactly: " << sumOfWeights << " there is obviously some problem..."<< Endl;
+//    }
 
-   // set Mean and RMS
-   for (UInt_t ivar=0; ivar<nvars; ivar++) {
-      Double_t mean = x0(ivar)/sumOfWeights;
+//    // set Mean and RMS
+//    for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//       Double_t mean = x0(ivar)/sumOfWeights;
 
-      vars[ivar].SetMean( mean );
-      if (x2(ivar)/sumOfWeights - mean*mean < 0) {
-         Log() << kFATAL << " the RMS of your input variable " << ivar
-               << " evaluates to an imaginary number: sqrt("<< x2(ivar)/sumOfWeights - mean*mean
-               <<") .. sometimes related to a problem with outliers and negative event weights"
-               << Endl;
-      }
-      vars[ivar].SetRMS( TMath::Sqrt( x2(ivar)/sumOfWeights - mean*mean) );
-   }
-   for (UInt_t itgt=0; itgt<ntgts; itgt++) {
-      Double_t mean = x0(nvars+itgt)/sumOfWeights;
-      tars[itgt].SetMean( mean );
-      if (x2(nvars+itgt)/sumOfWeights - mean*mean < 0) {
-         Log() << kFATAL << " the RMS of your target variable " << itgt
-               << " evaluates to an imaginary number: sqrt(" << x2(nvars+itgt)/sumOfWeights - mean*mean
-               <<") .. sometimes related to a problem with outliers and negative event weights"
-               << Endl;
-      }
-      tars[itgt].SetRMS( TMath::Sqrt( x2(nvars+itgt)/sumOfWeights - mean*mean) );
-   }
+//       vars[ivar].SetMean( mean );
+//       if (x2(ivar)/sumOfWeights - mean*mean < 0) {
+//          Log() << kFATAL << " the RMS of your input variable " << ivar
+//                << " evaluates to an imaginary number: sqrt("<< x2(ivar)/sumOfWeights - mean*mean
+//                <<") .. sometimes related to a problem with outliers and negative event weights"
+//                << Endl;
+//       }
+//       vars[ivar].SetRMS( TMath::Sqrt( x2(ivar)/sumOfWeights - mean*mean) );
+//    }
+//    for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+//       Double_t mean = x0(nvars+itgt)/sumOfWeights;
+//       tars[itgt].SetMean( mean );
+//       if (x2(nvars+itgt)/sumOfWeights - mean*mean < 0) {
+//          Log() << kFATAL << " the RMS of your target variable " << itgt
+//                << " evaluates to an imaginary number: sqrt(" << x2(nvars+itgt)/sumOfWeights - mean*mean
+//                <<") .. sometimes related to a problem with outliers and negative event weights"
+//                << Endl;
+//       }
+//       tars[itgt].SetRMS( TMath::Sqrt( x2(nvars+itgt)/sumOfWeights - mean*mean) );
+//    }
 
-   // calculate variance
-   for (UInt_t ievt=0; ievt<nevts; ievt++) {
-      const Event* ev = events[ievt];
-      Double_t weight = ev->GetWeight();
+//    // calculate variance
+//    for (UInt_t ievt=0; ievt<nevts; ievt++) {
+//       const Event* ev = events[ievt];
+//       Double_t weight = ev->GetWeight();
 
-      for (UInt_t ivar=0; ivar<nvars; ivar++) {
-         Double_t x = ev->GetValue(ivar);
-         Double_t mean = vars[ivar].GetMean();
-         v0(ivar) += weight*(x-mean)*(x-mean);
-      }
+//       for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//          Double_t x = ev->GetValue(ivar);
+//          Double_t mean = vars[ivar].GetMean();
+//          v0(ivar) += weight*(x-mean)*(x-mean);
+//       }
 
-      for (UInt_t itgt=0; itgt<ntgts; itgt++) {
-         Double_t x = ev->GetTarget(itgt);
-         Double_t mean = tars[itgt].GetMean();
-         v0(nvars+itgt) += weight*(x-mean)*(x-mean);
-      }
-   }
+//       for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+//          Double_t x = ev->GetTarget(itgt);
+//          Double_t mean = tars[itgt].GetMean();
+//          v0(nvars+itgt) += weight*(x-mean)*(x-mean);
+//       }
+//    }
 
-   Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
-   maxL = maxL + 8;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Variables";
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+//    Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
+//    maxL = maxL + 8;
+//    Log() << kINFO << "----------------------------------------------------------------" << Endl;
+//    Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Variables";
+//    Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
+//    Log() << kINFO << "----------------------------------------------------------------" << Endl;
 
-   // set variance
-   Log() << std::setprecision(5);
-   for (UInt_t ivar=0; ivar<nvars; ivar++) {
-      Double_t variance = v0(ivar)/sumOfWeights;
-      vars[ivar].SetVariance( variance );
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
-   }
+//    // set variance
+//    Log() << std::setprecision(5);
+//    for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//       Double_t variance = v0(ivar)/sumOfWeights;
+//       vars[ivar].SetVariance( variance );
+//       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
+//       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
+//    }
 
-   maxL = DefaultDataSetInfo().GetTargetNameMaxLength();
-   maxL = maxL + 8;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Targets";
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+//    maxL = DefaultDataSetInfo().GetTargetNameMaxLength();
+//    maxL = maxL + 8;
+//    Log() << kINFO << "----------------------------------------------------------------" << Endl;
+//    Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Targets";
+//    Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
+//    Log() << kINFO << "----------------------------------------------------------------" << Endl;
 
-   for (UInt_t itgt=0; itgt<ntgts; itgt++) {
-      Double_t variance = v0(nvars+itgt)/sumOfWeights;
-      tars[itgt].SetVariance( variance );
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << tars[itgt].GetExpression();
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
-   }
+//    for (UInt_t itgt=0; itgt<ntgts; itgt++) {
+//       Double_t variance = v0(nvars+itgt)/sumOfWeights;
+//       tars[itgt].SetVariance( variance );
+//       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << tars[itgt].GetExpression();
+//       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
+//    }
 
-   Log() << kINFO << "Set minNorm/maxNorm for variables to: " << Endl;
-   Log() << std::setprecision(3);
-   for (UInt_t ivar=0; ivar<nvars; ivar++)
-      Log() << "    " << vars[ivar].GetExpression()
-            << "\t: [" << vars[ivar].GetMin() << "\t, " << vars[ivar].GetMax() << "\t] " << Endl;
-   Log() << kINFO << "Set minNorm/maxNorm for targets to: " << Endl;
-   Log() << std::setprecision(3);
-   for (UInt_t itgt=0; itgt<ntgts; itgt++)
-      Log() << "    " << tars[itgt].GetExpression()
-            << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
-   Log() << std::setprecision(5); // reset to better value
-}
+//    Log() << kINFO << "Set minNorm/maxNorm for variables to: " << Endl;
+//    Log() << std::setprecision(3);
+//    for (UInt_t ivar=0; ivar<nvars; ivar++)
+//       Log() << "    " << vars[ivar].GetExpression()
+//             << "\t: [" << vars[ivar].GetMin() << "\t, " << vars[ivar].GetMax() << "\t] " << Endl;
+//    Log() << kINFO << "Set minNorm/maxNorm for targets to: " << Endl;
+//    Log() << std::setprecision(3);
+//    for (UInt_t itgt=0; itgt<ntgts; itgt++)
+//       Log() << "    " << tars[itgt].GetExpression()
+//             << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
+//    Log() << std::setprecision(5); // reset to better value
+// }
 
 //_______________________________________________________________________
-void TMVA::DataLoader::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src)
-{
-   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Sbegin();treeinfo!=src->DataInput().Send();treeinfo++)
-   {
-      des->AddSignalTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
-   }
+// void TMVA::DataLoader::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src)
+// {
+//    for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Sbegin();treeinfo!=src->DataInput().Send();treeinfo++)
+//    {
+//       des->AddSignalTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+//    }
 
-   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Bbegin();treeinfo!=src->DataInput().Bend();treeinfo++)
-   {
-      des->AddBackgroundTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
-   }
-}
+//    for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Bbegin();treeinfo!=src->DataInput().Bend();treeinfo++)
+//    {
+//       des->AddBackgroundTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+//    }
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Returns a single tree containing all trees added in DataLoader
 
-TTree* TMVA::DataLoader::MakeDataSetTree()
-{
-   TTree *t = new TTree("Dataset", "Contains all events");
-   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-   std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-   UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-   UInt_t nevts = events.size();
-   TString varName, varType;
-   std::vector<Float_t>& values = events[0]->GetValues();
-   for (UInt_t i = 0; i < nvars; i++) {
-      varName = vars[i].GetExpression();
-      varType = varName;
-      varType += "/F";
-      t->Branch(varName, &values[i], varType);
-   }
-   for (UInt_t ievt = 0; ievt < nevts; ievt++)
-   {
-      values = events[ievt]->GetValues();
-      t->Fill();
-   }
-   return t;
-}
+// TTree* TMVA::DataLoader::MakeDataSetTree()
+// {
+//    TTree *t = new TTree("Dataset", "Contains all events");
+//    const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+//    std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+//    UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+//    UInt_t nevts = events.size();
+//    TString varName, varType;
+//    std::vector<Float_t>& values = events[0]->GetValues();
+//    for (UInt_t i = 0; i < nvars; i++) {
+//       varName = vars[i].GetExpression();
+//       varType = varName;
+//       varType += "/F";
+//       t->Branch(varName, &values[i], varType);
+//    }
+//    for (UInt_t ievt = 0; ievt < nevts; ievt++)
+//    {
+//       values = events[ievt]->GetValues();
+//       t->Fill();
+//    }
+//    return t;
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Transform the events by Autoencoder and return a new DataLoader
 /// and writes the transformed dataset to a new root file
 
-TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLayer)
-{
-   const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
-   // get number of variables for new DataLoader
-   TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
-   const Event* ev = events[0];
-   std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-   UInt_t numOfTranfVariables = tranfValues.size();
+// TMVA::DataLoader* TMVA::DataLoader::AETransform(MethodDNN *method, Int_t indexLayer)
+// {
+//    const std::vector<Event*>& events = DefaultDataSetInfo().GetDataSet()->GetEventCollection();
+//    // get number of variables for new DataLoader
+//    TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
+//    const Event* ev = events[0];
+//    std::vector<Float_t>& tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+//    UInt_t numOfTranfVariables = tranfValues.size();
 
-   // create a new dataset file
-   TString newDataSetName = DefaultDataSetInfo().GetName();
-   newDataSetName += "_ae_transformed.root";
-   TFile *f = new TFile(newDataSetName,"RECREATE");
+//    // create a new dataset file
+//    TString newDataSetName = DefaultDataSetInfo().GetName();
+//    newDataSetName += "_ae_transformed.root";
+//    TFile *f = new TFile(newDataSetName,"RECREATE");
 
-   // get number of classes
-   const UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
-   const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
-   const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
-   const UInt_t nevts = events.size();
+//    // get number of classes
+//    const UInt_t numOfClasses = DefaultDataSetInfo().GetNClasses();
+//    const UInt_t numOfTargets = DefaultDataSetInfo().GetNTargets();
+//    const UInt_t numOfVariables = DefaultDataSetInfo().GetNVariables();
+//    const UInt_t nevts = events.size();
 
-   Log() << kINFO << "[AE Transform] Total number of events: " << nevts << Endl;
+//    Log() << kINFO << "[AE Transform] Total number of events: " << nevts << Endl;
 
-   TString varName, tarName, varType, tarType;
-   // it's a regression problem
-   // TODO: Add regression trees with weights
-   if (numOfTargets != 0)
-   {
-      Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
-      // create a new tree with transformed variables and original targets
-      TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
-      for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-         varName = "ae_transformed_var";
-         varName += i;
-         varType = varName;
-         varType += "/F";
+//    TString varName, tarName, varType, tarType;
+//    // it's a regression problem
+//    // TODO: Add regression trees with weights
+//    if (numOfTargets != 0)
+//    {
+//       Log() << kINFO << "[AE Transform] Number of targets: " << numOfTargets << Endl;
+//       // create a new tree with transformed variables and original targets
+//       TTree *R = new TTree("ae_transformed_regtree","AE Transformed Regression Tree");
+//       for (UInt_t i = 0; i < numOfTranfVariables; i++) {
+//          varName = "ae_transformed_var";
+//          varName += i;
+//          varType = varName;
+//          varType += "/F";
 
-         Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
-         R->Branch(varName, &tranfValues[i], varType);
-         transformedLoader->AddVariable(varName, 'F');
-      }
-      std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
-      std::vector<Float_t> targets(numOfTargets);
-      for (UInt_t i = 0; i < numOfTargets; i++) {
-         tarType = tars[i].GetExpression();
-         tarType += "/F";
+//          Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
+//          R->Branch(varName, &tranfValues[i], varType);
+//          transformedLoader->AddVariable(varName, 'F');
+//       }
+//       std::vector<VariableInfo>& tars = DefaultDataSetInfo().GetTargetInfos();
+//       std::vector<Float_t> targets(numOfTargets);
+//       for (UInt_t i = 0; i < numOfTargets; i++) {
+//          tarType = tars[i].GetExpression();
+//          tarType += "/F";
 
-         Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;
-         R->Branch(tars[i].GetExpression(), &targets[i], tarType);
-         transformedLoader->AddTarget(tars[i].GetExpression());
-      }
+//          Log() << kINFO << "[AE Transform] Adding target variable " << tars[i].GetExpression() << " to new DataLoader" << Endl;
+//          R->Branch(tars[i].GetExpression(), &targets[i], tarType);
+//          transformedLoader->AddTarget(tars[i].GetExpression());
+//       }
 
-      // loop over all events, tranform and add to tree
-      UInt_t itgt;
-      for (UInt_t ievt = 0; ievt < nevts; ievt++) {
-         ev = events[ievt];
-         tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-         for (itgt = 0; itgt < numOfTargets; itgt++)
-            targets[itgt] = ev->GetTarget(itgt);
-         R->Fill();
-      }
-      f->Write();
-      f->Close();
-      Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
-      Double_t regWeight = 1.0;
-      TCut myCut = "";
-      TFile *transformedData = TFile::Open(newDataSetName);
-      TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");
-      transformedLoader->AddRegressionTree(s, regWeight);
-      transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
-      transformedData->Close();
-   }
-   else // classification problem
-   {
-      Log() << kINFO << "[AE Transform] Number of classes: " << numOfClasses << Endl;
-      Log() << kINFO << "[AE Transform] Initial number of variables: " << numOfVariables << Endl;
-      // create array of trees, each tree represents a class
-      const UInt_t N = numOfClasses;
-      TTree *classes[N];
-      std::vector<Double_t> treeWeights(N);
-      for (UInt_t i = 0; i < numOfTranfVariables; i++) {
-         varName = "ae_transformed_var";
-         varName += i;
-         varType = varName;
-         varType += "/F";
+//       // loop over all events, tranform and add to tree
+//       UInt_t itgt;
+//       for (UInt_t ievt = 0; ievt < nevts; ievt++) {
+//          ev = events[ievt];
+//          tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+//          for (itgt = 0; itgt < numOfTargets; itgt++)
+//             targets[itgt] = ev->GetTarget(itgt);
+//          R->Fill();
+//       }
+//       f->Write();
+//       f->Close();
+//       Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
+//       Double_t regWeight = 1.0;
+//       TCut myCut = "";
+//       TFile *transformedData = TFile::Open(newDataSetName);
+//       TTree *s = (TTree*)transformedData->Get("ae_transformed_regtree");
+//       transformedLoader->AddRegressionTree(s, regWeight);
+//       transformedLoader->PrepareTrainingAndTestTree(myCut, DefaultDataSetInfo().GetSplitOptions());
+//       transformedData->Close();
+//    }
+//    else // classification problem
+//    {
+//       Log() << kINFO << "[AE Transform] Number of classes: " << numOfClasses << Endl;
+//       Log() << kINFO << "[AE Transform] Initial number of variables: " << numOfVariables << Endl;
+//       // create array of trees, each tree represents a class
+//       const UInt_t N = numOfClasses;
+//       TTree *classes[N];
+//       std::vector<Double_t> treeWeights(N);
+//       for (UInt_t i = 0; i < numOfTranfVariables; i++) {
+//          varName = "ae_transformed_var";
+//          varName += i;
+//          varType = varName;
+//          varType += "/F";
 
-         Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
-         for (UInt_t j = 0; j < numOfClasses; j++) {
-            if (i == 0) {// allocate memory to tree pointer
-               classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
-            }
-            classes[j]->Branch(varName, &tranfValues[i], varType);
-         }
-         transformedLoader->AddVariable(varName, 'F');
-      }
+//          Log() << kINFO << "[AE Transform] Adding transformed variable " << varName << " to new DataLoader" << Endl;
+//          for (UInt_t j = 0; j < numOfClasses; j++) {
+//             if (i == 0) {// allocate memory to tree pointer
+//                classes[j] = new TTree(DefaultDataSetInfo().GetClassInfo(j)->GetName(), DefaultDataSetInfo().GetClassInfo(j)->GetName());
+//             }
+//             classes[j]->Branch(varName, &tranfValues[i], varType);
+//          }
+//          transformedLoader->AddVariable(varName, 'F');
+//       }
 
-      // loop over all class events, transform and fill the respective trees
-      UInt_t itgt, cls;
-      for (UInt_t ievt = 0; ievt < nevts; ievt++) {
-         ev = events[ievt];
-         cls = ev->GetClass();
-         treeWeights[cls] = ev->GetOriginalWeight();
-         tranfValues = method->GetLayerActivationValues(ev, indexLayer);
-         classes[cls]->Fill();
-      }
-      f->Write();
-      f->Close();
-      Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
-      TFile *transformedData = TFile::Open(newDataSetName);
-      for (UInt_t it = 0; it < numOfClasses; it++){
-         TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
-         transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName(), treeWeights[it]);
-      }
-      transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
-      transformedData->Close();
-   }
-   return transformedLoader;
-}
+//       // loop over all class events, transform and fill the respective trees
+//       UInt_t itgt, cls;
+//       for (UInt_t ievt = 0; ievt < nevts; ievt++) {
+//          ev = events[ievt];
+//          cls = ev->GetClass();
+//          treeWeights[cls] = ev->GetOriginalWeight();
+//          tranfValues = method->GetLayerActivationValues(ev, indexLayer);
+//          classes[cls]->Fill();
+//       }
+//       f->Write();
+//       f->Close();
+//       Log() << kINFO << "[AE Transform] New data with transformed variables has been written to " << newDataSetName  << " file" << Endl;
+//       TFile *transformedData = TFile::Open(newDataSetName);
+//       for (UInt_t it = 0; it < numOfClasses; it++){
+//          TTree *s = (TTree*)transformedData->Get(DefaultDataSetInfo().GetClassInfo(it)->GetName());
+//          transformedLoader->AddTree(s, DefaultDataSetInfo().GetClassInfo(it)->GetName(), treeWeights[it]);
+//       }
+//       transformedLoader->PrepareTrainingAndTestTree("", DefaultDataSetInfo().GetSplitOptions());
+//       transformedData->Close();
+//    }
+//    return transformedLoader;
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Computes variance of all the variables and
@@ -501,6 +496,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
    else
       trName = trafoDefinition;
 
+   VarTransformHandler* handler = new VarTransformHandler(DefaultDataSetInfo(), this);
    // variance threshold variable transformation
    if (trName == "VT") {
 
@@ -512,43 +508,45 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       }
       else
          threshold =  trOptions.Atof();
-      Log() << kINFO << "Transformation: " << trName << Endl;
-      Log() << kINFO << "Threshold value: " << threshold << Endl;
-
-      // calculate variance of variables if not done already
-      if(!fCalcNorm)
-         CalcNorm();
-
-      // get variable info
-      const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-      Log() << kINFO << "Number of variables before transformation: " << nvars << Endl;
-      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-
-      // return a new dataloader
-      // iterate over all variables, ignore the ones whose variance is below specific threshold
-      TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
-      Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
-      Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
-      maxL = maxL + 16;
-      Log() << kINFO << "----------------------------------------------------------------" << Endl;
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
-      Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
-      Log() << kINFO << "----------------------------------------------------------------" << Endl;
-      for (UInt_t ivar=0; ivar<nvars; ivar++) {
-         Double_t variance =  vars[ivar].GetVariance();
-         if (variance > threshold)
-         {
-            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
-            Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
-            transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
-         }
-      }
-      Log() << kINFO << "----------------------------------------------------------------" << Endl;
-      CopyDataLoader(transformedLoader,this);
-      transformedLoader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
-      Log() << kINFO << "Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;
-
+      TMVA::DataLoader *transformedLoader = handler->VarianceThreshold(threshold);
       return transformedLoader;
+      // Log() << kINFO << "Transformation: " << trName << Endl;
+      // Log() << kINFO << "Threshold value: " << threshold << Endl;
+
+      // // calculate variance of variables if not done already
+      // if(!fCalcNorm)
+      //    CalcNorm();
+
+      // // get variable info
+      // const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+      // Log() << kINFO << "Number of variables before transformation: " << nvars << Endl;
+      // std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+
+      // // return a new dataloader
+      // // iterate over all variables, ignore the ones whose variance is below specific threshold
+      // TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(DefaultDataSetInfo().GetName());
+      // Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
+      // Int_t maxL = DefaultDataSetInfo().GetVariableNameMaxLength();
+      // maxL = maxL + 16;
+      // Log() << kINFO << "----------------------------------------------------------------" << Endl;
+      // Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
+      // Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
+      // Log() << kINFO << "----------------------------------------------------------------" << Endl;
+      // for (UInt_t ivar=0; ivar<nvars; ivar++) {
+      //    Double_t variance =  vars[ivar].GetVariance();
+      //    if (variance > threshold)
+      //    {
+      //       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
+      //       Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
+      //       transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+      //    }
+      // }
+      // Log() << kINFO << "----------------------------------------------------------------" << Endl;
+      // CopyDataLoader(transformedLoader,this);
+      // transformedLoader->PrepareTrainingAndTestTree(this->DefaultDataSetInfo().GetCut("Signal"), this->DefaultDataSetInfo().GetCut("Background"), this->DefaultDataSetInfo().GetSplitOptions());
+      // Log() << kINFO << "Number of variables after transformation: " << transformedLoader->DefaultDataSetInfo().GetNVariables() << Endl;
+
+      // return transformedLoader;
    }
    // Autoencoder Variable Transformation
    else if (trName == "AE") {
@@ -586,56 +584,60 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       token = (TObjString*)nextToken();
       TString dnnOptions = token->GetString();            
 
-      // prepare new loader for DNN training
-      Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
-      TMVA::DataLoader *tempLoader = new TMVA::DataLoader("ae_transform_dataset");
-      std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
-      const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
-      for (UInt_t ivar=0; ivar<nvars; ivar++) {
-         tempLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
-         tempLoader->AddTarget(vars[ivar].GetExpression());
-      }
-      TTree *data = MakeDataSetTree();
-      tempLoader->AddRegressionTree(data, 1.0);
-      tempLoader->PrepareTrainingAndTestTree("","SplitMode=random:!V");
-
-      // extract names contained in "trOptions"
-      Types::EMVA theMethod = TMVA::Types::kDNN;
-      TString theMethodName = Types::Instance().GetMethodName( theMethod );
-      TString JobName = "TMVARegression";
-
-      // book DNN Method
-      Event::SetIsTraining(kTRUE);
-      gSystem->MakeDirectory(tempLoader->GetName());
-      fAnalysisType = Types::kRegression;
-      TString methodTitle = "DNN";
-      IMethod* im;
-      im = ClassifierFactory::Instance().Create( std::string(theMethodName),
-                                            JobName,
-                                            methodTitle,
-                                            tempLoader->DefaultDataSetInfo(),
-                                            dnnOptions );
-      MethodDNN *method = dynamic_cast<MethodDNN*>(im);
-      if (method==0)
-      {
-         Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
-         return this;
-      }
-      method->SetAnalysisType( fAnalysisType );
-      method->SetupMethod();
-      method->ParseOptions();
-      method->ProcessSetup();
-      method->CheckSetup();
-
-      // train DNN Method
-      method->TrainMethod();
-      Log() << kINFO << "Training finished" << Endl;
-
-      // transform events
-      TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
-      Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
+      TMVA::DataLoader* transformedLoader = handler->AutoencoderTransform(dnnOptions, preTrngValue, indexLayer);
       return transformedLoader;
-   }
+      // prepare new loader for DNN training
+  //     Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
+  //     TMVA::DataLoader *tempLoader = new TMVA::DataLoader("ae_transform_dataset");
+  //     std::vector<VariableInfo>& vars = DefaultDataSetInfo().GetVariableInfos();
+  //     const UInt_t nvars = DefaultDataSetInfo().GetNVariables();
+  //     for (UInt_t ivar=0; ivar<nvars; ivar++) {
+  //        tempLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+  //        tempLoader->AddTarget(vars[ivar].GetExpression());
+  //     }
+  //     TTree *data = MakeDataSetTree();
+  //     tempLoader->AddRegressionTree(data, 1.0);
+  //     tempLoader->PrepareTrainingAndTestTree("","SplitMode=random:!V");
+
+  //     // extract names contained in "trOptions"
+  //     Types::EMVA theMethod = TMVA::Types::kDNN;
+  //     TString theMethodName = Types::Instance().GetMethodName( theMethod );
+  //     TString JobName = "TMVARegression";
+
+		// Log() << kINFO << "Booking DNN Method" << Endl;      
+  //     // book DNN Method
+  //     Event::SetIsTraining(kTRUE);
+  //     gSystem->MakeDirectory(tempLoader->GetName());
+  //     fAnalysisType = Types::kRegression;
+  //     TString methodTitle = "DNN";
+  //     IMethod* im;
+  //     im = ClassifierFactory::Instance().Create( std::string(theMethodName),
+  //                                           JobName,
+  //                                           methodTitle,
+  //                                           tempLoader->GetDataSetInfo(),
+  //                                           dnnOptions );
+  //     MethodDNN *method = dynamic_cast<MethodDNN*>(im);
+  //     if (method==0)
+  //     {
+  //        Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
+  //        return this;
+  //     }
+  //     method->SetAnalysisType( fAnalysisType );
+  //     method->SetupMethod();
+  //     method->ParseOptions();
+  //     method->ProcessSetup();
+  //     method->CheckSetup();
+
+  //     Log() << kINFO << "Training DNN Method" << Endl;
+  //     // train DNN Method
+  //     method->TrainMethod();
+  //     Log() << kINFO << "Training finished" << Endl;
+
+  //     // transform events
+  //     TMVA::DataLoader* transformedLoader = AETransform(method, indexLayer);
+  //     Log() << kINFO << "[AE Transform] Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
+  //     return transformedLoader;
+   }  
    else {
       Log() << kFATAL << "Incorrect transformation string provided, please check" << Endl;
    }
