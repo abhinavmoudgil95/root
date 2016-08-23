@@ -100,7 +100,7 @@ TMVA::VariableInfo::VariableInfo()
 ////////////////////////////////////////////////////////////////////////////////
 /// copy constructor
 
-TMVA::VariableInfo::VariableInfo( const VariableInfo& other ) {
+TMVA::VariableInfo::VariableInfo( const VariableInfo& other ) 
    : TNamed(other),
      fExpression   ( other.fExpression ),
      fInternalName ( other.fInternalName ),
@@ -116,6 +116,7 @@ TMVA::VariableInfo::VariableInfo( const VariableInfo& other ) {
      fNormalized   ( other.fNormalized ),
      fExternalData ( other.fExternalData ),
      fVarCounter   ( other.fVarCounter )
+{
 }
 
 ////////////////////////////////////////////////////////////////////////////////
