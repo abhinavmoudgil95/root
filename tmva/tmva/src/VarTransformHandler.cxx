@@ -3,6 +3,8 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TMatrix.h"
+#include "TMatrixTSparse.h"
+#include "TMatrixDSparsefwd.h"
 
 #include "TMVA/VarTransformHandler.h"
 #include "TMVA/DataSet.h"
@@ -19,26 +21,81 @@
 
 #include <vector>
 #include <iomanip>
+#include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////////
 /// constructor
 
-TMVA::VarTransformHandler::VarTransformHandler( DataSetInfo& dsi, DataLoader* dl ) 
-   : fDataSetInfo(dsi),
+TMVA::VarTransformHandler::VarTransformHandler( DataLoader* dl )
+   : fLogger     ( new MsgLogger(TString("VarTransformHandler").Data(), kINFO) ),
+     fDataSetInfo(dl->GetDataSetInfo()),
      fDataLoader (dl),
-     fLogger     ( new MsgLogger(TString("VarTransformHandler").Data(), kINFO) )
+     fEvents (fDataSetInfo.GetDataSet()->GetEventCollection())
 {
-   // produce one entry for each class and one entry for all classes. If there is only one class, 
-   // produce only one entry
+   Log() << kINFO << "Number of events - " << fEvents.size() << Endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// destructor
 
-TMVA::VarTransformHandler::~VarTransformHandler() 
+TMVA::VarTransformHandler::~VarTransformHandler()
 {
 	// do something
-   delete fLogger;	
+   delete fLogger;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Computes variance of all the variables and
+/// returns a new DataLoader with the selected variables whose variance is above a specific threshold.
+/// Threshold can be provided by user otherwise default value is 0 i.e. remove the variables which have same value in all
+/// the events.
+///
+/// \param[in] threshold value (Double)
+///
+/// Transformation Definition String Format: "VT(optional float value)"
+///
+/// Usage examples:
+///
+/// String    | Description
+/// -------   |----------------------------------------
+/// "VT"      | Select variables whose variance is above threshold value = 0 (Default)
+/// "VT(1.5)" | Select variables whose variance is above threshold value = 1.5
+
+TMVA::DataLoader* TMVA::VarTransformHandler::VarianceThreshold(Double_t threshold)
+{
+   CalcNorm();
+   const UInt_t nvars = fDataSetInfo.GetNVariables();
+   Log() << kINFO << "Number of variables before transformation: " << nvars << Endl;
+   std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
+
+   // return a new dataloader
+   // iterate over all variables, ignore the ones whose variance is below specific threshold
+   DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
+   // TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(fDataSetInfo.GetName());
+   Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
+   Int_t maxL = fDataSetInfo.GetVariableNameMaxLength();
+   maxL = maxL + 16;
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
+   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+   for (UInt_t ivar=0; ivar<nvars; ivar++) {
+      Double_t variance =  vars[ivar].GetVariance();
+      if (variance > threshold)
+      {
+         Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
+         Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
+         transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+      }
+   }
+   Log() << kINFO << "----------------------------------------------------------------" << Endl;
+   // CopyDataLoader(transformedLoader, fDataLoader);
+   // DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
+   transformedLoader->PrepareTrainingAndTestTree(fDataLoader->GetDataSetInfo().GetCut("Signal"), fDataLoader->GetDataSetInfo().GetCut("Background"), fDataLoader->GetDataSetInfo().GetSplitOptions());
+   Log() << kINFO << "Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
+
+   return transformedLoader;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,6 +103,8 @@ TMVA::VarTransformHandler::~VarTransformHandler()
 
 TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOptions, TString preTrngValue, Int_t indexLayer)
 {
+   // TODO implement pre-training
+   preTrngValue = "false";
    // prepare new loader for DNN training
    Log() << kINFO << "Preparing DataLoader for Autoencoder Transform DNN Training" << Endl;
    TMVA::DataLoader *tempLoader = new TMVA::DataLoader("ae_transform_dataset");
@@ -72,7 +131,6 @@ TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOpt
    Types::EAnalysisType fAnalysisType = Types::kRegression;
    TString methodTitle = "DNN";
    IMethod* im;
-   Log() << kINFO << "****1****" << Endl;   
    im = ClassifierFactory::Instance().Create( std::string(theMethodName),
                                          JobName,
                                          methodTitle,
@@ -84,18 +142,12 @@ TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOpt
       Log() << kINFO << "------------------------method = 0----------------------------" << Endl;
       return fDataLoader;
    }
-   Log() << kINFO << "****2****" << Endl;      
    method->SetAnalysisType( fAnalysisType );
-      Log() << kINFO << "****3****" << Endl;   
    method->SetupMethod();
-      Log() << kINFO << "****4****" << Endl;   
    method->ParseOptions();
-      Log() << kINFO << "****5****" << Endl;   
    method->ProcessSetup();
-      Log() << kINFO << "****6****" << Endl;   
    method->CheckSetup();
 
-   Log() << kINFO << "****7****" << Endl;   
    // train DNN Method
    method->TrainMethod();
    Log() << kINFO << "Training finished" << Endl;
@@ -218,88 +270,322 @@ TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOpt
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Feature Clustering
+/// Hessian Local Linear Embedding
 
-// TMVA::DataLoader* TMVA::VarTransformHandler::FeatureClustering()
+// TMVA::DataLoader* TMVA::VarTransformHandler::LocalLinearEmbedding(Int_t no_dims, Int_t k)
 // {
-// 	const std::vector<Event*>& events = fDataSetInfo.GetDataSet()->GetEventCollection();
-// 	TMatrixD* similarityMatrix = GetSimilarityMatrix(events);
-// 	return fDataLoader;
-// }
-
-// TMatrixD* GetSimilarityMatrix(const std::vector<Event*>& events)
-// {
-// 	UInt_t nevts = events.size();
-//    UInt_t nvars = fDataSetInfo.GetNVariables();
-//    Int_t sigma = 1;
-// 	TMatrixD* S = new TMatrixD( nevts, nevts );
-//    for (UInt_t ievt = 0; ievt < nevts; ievt++)
-//    {
-//      for (UInt_t jevt = ievt + 1; jevt < nevts; jevt++)
-//      {
-//          std::vector<Float_t>& valueI = events[ievt]->GetValues();   
-//          std::vector<Float_t>& valueJ = events[jevt]->GetValues(); 
-//          for (UInt_t k = 0; k < nvars; k++)
-//          {
-            
-//          }
-//      }  
+//    // compute data matrix
+//    for (UInt_t ievt=0; ievt<nevts; ievt++) {
+//       const Event* ev = fEvents[ievt];
+//       // Double_t weight = ev->GetWeight();
+//       // sumOfWeights += weight;
+//       Double_t sum;
+//       for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//          Double_t x = ev->GetValue(ivar);
+//          data(ievt, ivar) = x;
+//       }
 //    }
 
+//    // Find nearest neighbours
+//    std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
+//    UInt_t nvars = fDataSetInfo.GetNVariables();
+//    UInt_t nevts = fEvents.size();
+//    std::pair<TMatrixD, TMatrixD> kmap;
+//    kmap = FindNearestNeighbours(data, k);
+//    Int_t max_k = kmap.second.GetNcols();
+//    TMatrixD nind = kmap.second;
+
+//    // Extra term count for quadratic term
+//    Int_t dp = no_dims * (no_dims + 1) / 2;
+//    TMatrixDSparse W(dp * nevts, nevts);
+
+//    // For all datapoints
+//    Log() << kINFO << "Building Hessian Estimator for neighbouring points" << Endl;
+//    for (i = 0 ; i < nevts ; i++)
+//    {
+//       // Center datapoints by subtracting their mean
+//       TMatrixD thisx(k, nvars);
+//       for (UInt_t ii = 0; ii < k; ii++)
+//       {
+//          for (UInt_t jj = 0; jj < nvars; jj++)
+//             thisx(ii, jj) = data(nind(i, ii), jj);
+//       }
+//       thisx = thisx - RepeatMatrix(GetColsMean(thisx), k, 1);
+//       TMatrix Vpr = ComputeSVDMatrix(thisx);
+//       if (Vpr.GetNcols() < no_dims)
+//       {
+//          no_dims = Vpr.GetNcols();
+//          dp = no_dims * (no_dims + 1)/2;
+//          Log() << kWarning << "Number of dimensions are being reduced to " << no_dims << Endl;
+//       }
+//       V = Vpr.SliceMatrix(0,0, Vpr.GetNrows() - 1, no_dims - 1);
+
+//       // Get Hessian estimator
+//       TMatrixD Yi = GetHessianEstimator(V, no_dims);
+//       std::pair<TMatrix, TMatrix> Y = GramSchOrthogonalisation(Yi);
+//       TMatrix Pii = Y.first.SliceMatrix(0, Y.first.GetNrows() - 1, no_dims + 1, Y.first.GetNcols() - 1).Transpose();
+//       for (j = 0; j < dp; j++)
+//       {
+//          if (Pii.SliceMatrix(j, 0, 0, Pii.GetNcols()).Sum() > 0.0001)
+//             tpp = Pii.SliceMatrix(j, 0, 0, Pii.GetNcols()) / Pii.SliceMatrix(j, 0, 0, Pii.GetNcols()).Sum();
+//          else
+//             tpp = Pii.SliceMatrix(j, 0, 0, Pii.GetNcols());
+//          // correct it
+//          W.AssignVector(tpp, );
+//       }
+//    }
+
+//    Log() << kINFO << "Computing Hessian LLE embedding" << Endl;
+//    TMatrixDSparse G = W.Transpose() * W;
+
+//    // TODO clear memory
+//    TMatrixD eigenVectors = G.EigenVectors();
+//    newData = eigenVectors.SliceMatrix(0, eigenVectors.GetNrows(), 1, no_dims + 1);
+//    newData = newData * sqrt(n);
+
+//    // return a new dataloader with transformed variables
+//    DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
+
+//    return fDataLoader;
 // }
 
+///////////////////////////////////////////////////////////////////////////////
+////////////////////////////// Utility methods ////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 ////////////////////////////////////////////////////////////////////////////////
-/// Variance Threshold
+/// Repeats the matrix
 
-TMVA::DataLoader* TMVA::VarTransformHandler::VarianceThreshold(Double_t threshold)
+TMatrixD& TMVA::VarTransformHandler::RepeatMatrix(TMatrixD& mat, Int_t x, Int_t y)
 {
-   CalcNorm();
-   const UInt_t nvars = fDataSetInfo.GetNVariables();
-   Log() << kINFO << "Number of variables before transformation: " << nvars << Endl;
-   std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
-
-   // return a new dataloader
-   // iterate over all variables, ignore the ones whose variance is below specific threshold
-   DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());   
-   // TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(fDataSetInfo.GetName());
-   Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
-   Int_t maxL = fDataSetInfo.GetVariableNameMaxLength();
-   maxL = maxL + 16;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << "Selected Variables";
-   Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(10) << "Variance" << Endl;
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   for (UInt_t ivar=0; ivar<nvars; ivar++) {
-      Double_t variance =  vars[ivar].GetVariance();
-      if (variance > threshold)
+   Int_t n = mat.GetNrows();
+   Int_t d = mat.GetNcols();
+   TMatrixD* repeat_mat = new TMatrixD(n*x, y*d);
+   for (Int_t itr = 0; itr < x; itr++)
+   {
+      for (Int_t itc = 0; itc < y; itc++)
       {
-         Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << vars[ivar].GetExpression();
-         Log() << kINFO << std::setiosflags(std::ios::left) << std::setw(maxL) << variance << Endl;
-         transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
+         for (Int_t i = 0; i < n; i++)
+         {
+            for (Int_t j = 0; j < d; j++)
+            {
+               (*repeat_mat)(itr*n + i, itc*d + j) = mat(i, j);
+            }
+         }
       }
    }
-   Log() << kINFO << "----------------------------------------------------------------" << Endl;
-   // CopyDataLoader(transformedLoader, fDataLoader);
-   // DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
-   transformedLoader->PrepareTrainingAndTestTree(fDataLoader->GetDataSetInfo().GetCut("Signal"), fDataLoader->GetDataSetInfo().GetCut("Background"), fDataLoader->GetDataSetInfo().GetSplitOptions());
-   Log() << kINFO << "Number of variables after transformation: " << transformedLoader->GetDataSetInfo().GetNVariables() << Endl;
-
-   return transformedLoader;
+   return *repeat_mat;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Random Projection
+/// Returns mean of each column of a matrix
 
-TMVA::DataLoader* TMVA::VarTransformHandler::RandomProjection()
+TMatrixD& TMVA::VarTransformHandler::GetColsMean(TMatrixD& mat)
 {
-	return fDataLoader;
+   Int_t n = mat.GetNrows();
+   Int_t d = mat.GetNcols();
+   Double_t sum = 0;
+   TMatrixD* col_mean = new TMatrixD(1, d);
+   for (Int_t i = 0; i < d; i++)
+   {
+      sum = 0;
+      for (Int_t j = 0; j < n; j++)
+      {
+         sum += mat(j, i);
+      }
+      Log() << kINFO << sum << Endl;
+      (*col_mean)(0, i) = sum/n;
+   }
+   return (*col_mean);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// Returns mean of each column of a matrix
+
+TMatrixD& TMVA::VarTransformHandler::GetRowsMean(TMatrixD& mat)
+{
+   Int_t n = mat.GetNrows();
+   Int_t d = mat.GetNcols();
+   Double_t sum = 0;
+   TMatrixD* row_mean = new TMatrixD(n, 1);
+   for (Int_t i = 0; i < n; i++)
+   {
+      sum = 0;
+      for (Int_t j = 0; j < d; j++)
+      {
+         sum += mat(i, j);
+      }
+      Log() << kINFO << sum << Endl;
+      (*row_mean)(i, 0) = sum/n;
+   }
+   return (*row_mean);
+}
+
+// ////////////////////////////////////////////////////////////////////////////////
+// /// Slice the matrix
+
+TMatrixD& TMVA::VarTransformHandler::SliceMatrix(TMatrixD& mat, Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb)
+{
+   if (row_lwb > row_upb)
+   {
+      Log() << kINFO << "Lower bound of row number for slicing the matrix is greater than" <<
+                        "upper bound, please recheck. Returning original matrix as of now" << Endl;
+      return mat;
+   }
+   else if (col_lwb > col_upb)
+   {
+      Log() << kINFO << "Lower bound of column number for slicing the matrix is greater than" <<
+                        "upper bound, please recheck. Returning original matrix as of now" << Endl;
+      return mat;
+   }
+   TMatrixD* sliced_matrix = new TMatrixD(row_upb - row_lwb + 1, col_upb - col_lwb + 1);
+   for (Int_t i = row_lwb; i <= row_upb; i++)
+   {
+      for (Int_t j = col_lwb; j <= col_upb; j++)
+      {
+         (*sliced_matrix)(i - row_lwb, j - col_lwb) = mat(i, j);
+      }
+   }
+   return (*sliced_matrix);
+}
+
+// ////////////////////////////////////////////////////////////////////////////////
+// /// Performs Gram Schmidt Orthogonalization of a matrix
+
+// std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::GramSchOrthogonalisation(TMatrixD& mat)
+// {
+//    Int_t nrows = mat.GetNrows();
+//    Int_t ncols = mat.GetNcols();
+//    std::pair<TMatrixD, TMatrixD> Q;
+//    TMatrixD V(mat);
+//    TMatrix R(ncols, ncols);
+//    TMatrix cols_mean = GetColsMean(V);
+
+//    for (Int_t i = 0; i < ncols; i++)
+//    {
+//       R(i, i) = cols_mean(1, i);
+//       for (Int_t it = 0; it < nrows; it++)
+//       {
+//          V(it, i) = V(it, i)/R(i, i);
+//       }
+//       if (i < ncols)
+//       {
+//          for (Int_t j = i + 1; j < n; j++)
+//          {
+
+//             R(i, j) = SliceMatrix(V, 0, nrows, i, i).Transpose() * SliceMatrix(V, 0, nrows, j, j);
+//             for (Int_t k = 0; k < nrows; k++)
+//             {
+//                V(k, j) = V(k, j) - R(i, j) * V(k, i);
+//             }
+//          }
+//       }
+//    }
+//    Q.first = V;
+//    Q.second = R;
+//    return Q;
+// }
+
+// ////////////////////////////////////////////////////////////////////////////////
+// /// TODO UDV' = SVD(X), Computes SVD of a matrix and  returns V
+
+// TMatrixD& TMVA::VarTransformHandler::ComputeSVDMatrix(TMatrixD& mat)
+// {
+
+// }
+
+// ////////////////////////////////////////////////////////////////////////////////
+// /// Returns the Hessian estimate of a matrix
+
+// TMatrixD& TMVA::VarTransformHandler::GetHessianEstimator(TMatrixD& mat, Int_t no_dims)
+// {
+
+//    // TODO Compute appropiate size of Yi
+//    TMatrixD Yi(nrows, );
+//    Int_t ct = 0;
+//    Int_t nrows = mat.GetNrows();
+//    Int_t ncols = mat.GetNcols();
+//    for (Int_t i = 0; i < no_dims; i++)
+//    {
+//       TMatrixD startp = SliceMatrix(mat, 0, nrows, i, i);
+//       for (Int_t j = 0; j < (no_dims - i + 1); j++)
+//       {
+//          for (Int_t k = 0; k < nrows; k++)
+//          {
+//             Yi(k, ct + j) = startp(k, 0) * V(k, i + j);
+//          }
+//       }
+//       ct = ct + no_dims - i + 1;
+//    }
+//    TMatrixD Y(V.GetNrows(), V.GetNcols() + 1 + Yi.GetNcols())
+//    for (Int_t i = 0; i < V.GetNrows(); i++)
+//       Y(i, 0) = 1;
+//    for (Int_t i = 0; i < V.GetNrows(); i++)
+//    {
+//       for (Int_t j = 0; j < V.GetNcols(); j++)
+//          Y(i, j + 1) = V(i, j);
+//    }
+//    Int_t V_rows = V.GetNrows();
+//    Int_t V_cols = V.GetNcols();
+//    for (Int_t i = 0; i < Yi.GetNrows(); i++)
+//    {
+//       for (Int_t j = 0; j < Yi.GetNcols(); j++)
+//          Y(i + v_rows, j + 1 + v_cols) = Yi(i, j);
+//    }
+//    return Y;
+// }
+
+// // TODO: modify it by event weight
+// std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::FindNearestNeighbours(TMatrixD data, Int_t k)
+// {
+//    UInt_t nevts = fEvents.size();
+//    UInt_t nvars = fDataSetInfo.GetNVariables();
+
+//    // compute data matrix and sum of variables for each event
+//    // TMatrixD data ( nevts, nvars );
+//    // for (UInt_t ievt=0; ievt<nevts; ievt++) {
+//    //    const Event* ev = fEvents[ievt];
+//    //    // Double_t weight = ev->GetWeight();
+//    //    // sumOfWeights += weight;
+//    //    for (UInt_t ivar=0; ivar<nvars; ivar++) {
+//    //       Double_t x = ev->GetValue(ivar);
+//    //       data(ievt, ivar) = x;
+//    //    }
+//    // }
+
+//    // find distance between events and pick top k
+//    std::pair <TMatrixD, TMatrixD> kmap;
+//    TMatrixD D(nevts, k); D *= 0;
+//    TMatrixD ni(nevts, k); ni *= 0;
+//    std::vector< std::pair<Double_t, Int_t> > distances(nevts - 1);
+//    for (UInt_t i = 0; i < nevts; i += 1)
+//    {
+//       for (UInt_t j = 0; (j < nevts & j != i); j++)
+//       {
+//          Double_t d = 0;
+//          for (UInt_t ivar = 0; ivar < nvars; ivar++)
+//          {
+//             d += ((data(i, ivar) - data(j, ivar)) * (data(i, ivar) - data(j, ivar)));
+//          }
+//          distances[j].first = sqrt(d);
+//          distances[j].second = j;
+//       }
+//       std::sort(distances.begin(), distances.end());
+//       for (Int_t it = 0; it < k; i++) {
+//          D(i, it) = distances[it].first;
+//          ni(i, it) = distances[it].second;
+//       }
+//    }
+//    kmap.first = D;
+//    kmap.second = ni;
+//    return kmap;
+// }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Returns a single tree containing all the trees of the dataset
 
-TTree* TMVA::VarTransformHandler::MakeDataSetTree() 
-{	
+TTree* TMVA::VarTransformHandler::MakeDataSetTree()
+{
    TTree *t = new TTree("Dataset", "Contains all events");
    const std::vector<Event*>& events = fDataSetInfo.GetDataSet()->GetEventCollection();
    std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
@@ -340,7 +626,7 @@ void TMVA::VarTransformHandler::UpdateNorm (Int_t ivar, Double_t x)
       if (x > tars[ivar-nvars].GetMax()) tars[ivar-nvars].SetMax(x);
    }
 }
-	
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Computes maximum, minimum, mean, RMS and variance for all
 /// variables and targets
@@ -480,7 +766,7 @@ void TMVA::VarTransformHandler::CalcNorm()
    for (UInt_t itgt=0; itgt<ntgts; itgt++)
       Log() << "    " << tars[itgt].GetExpression()
             << "\t: [" << tars[itgt].GetMin() << "\t, " << tars[itgt].GetMax() << "\t] " << Endl;
-   Log() << std::setprecision(5); // reset to better value	
+   Log() << std::setprecision(5); // reset to better value
 }
 
 //_______________________________________________________________________

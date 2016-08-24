@@ -28,26 +28,29 @@ namespace TMVA {
    class VarTransformHandler {
    public: 
 
-      VarTransformHandler(DataSetInfo&, DataLoader*);
+      VarTransformHandler(DataLoader*);
       ~VarTransformHandler();
 
       TMVA::DataLoader* VarianceThreshold(Double_t threshold);
       TMVA::DataLoader* AutoencoderTransform(TString dnnOptions, TString preTrngValue, Int_t indexLayer);
       TMVA::DataLoader* FeatureClustering();
-      TMVA::DataLoader* RandomProjection();  
+      TMVA::DataLoader* LocalLinearEmbedding(Int_t no_dims, Int_t k);
 
       mutable MsgLogger* fLogger;             //! message logger
       MsgLogger& Log() const { return *fLogger; }
 
    private:
 
-      DataSetInfo&             fDataSetInfo; 
-      DataLoader*              fDataLoader;
-      TTree*                   MakeDataSetTree();
-      void                     UpdateNorm (Int_t ivar, Double_t x); 
-      void                     CalcNorm();
-      // void                     CopyDataLoader(DataLoader* des, DataLoader* src);      
-
+      DataSetInfo&                  fDataSetInfo;
+      DataLoader*                   fDataLoader;
+      const std::vector<Event*>&    fEvents;
+      TTree*                        MakeDataSetTree();
+      void                          UpdateNorm (Int_t ivar, Double_t x);
+      void                          CalcNorm();
+      TMatrixD&                     RepeatMatrix(TMatrixD& mat, Int_t x, Int_t y);
+      TMatrixD&                     SliceMatrix(TMatrixD& mat, Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb);
+      TMatrixD&                     GetColsMean(TMatrixD& mat);
+      TMatrixD&                     GetRowsMean(TMatrixD& mat);
    };
 
 }

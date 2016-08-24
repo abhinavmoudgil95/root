@@ -100,19 +100,6 @@ namespace TMVA {
       void           SetInternalVarName( const TString& s ) { fInternalName = s; }
       void           SetVarType        ( char c )           { fVarType = c; }
 
-<<<<<<< HEAD
-      TString  fExpression;      // original variable expression (can be a formula)
-      TString  fInternalName;    // internal variable name (needs to be regular expression)
-      TString  fLabel;           // variable label, set by "mylabel := var1 + var2", this is a shortcut
-      //TString  fTitle;           //! title for axis labels in plots; set by second string in AddVariable
-      TString  fUnit;            // unit for axis labels in plots; set by third string in AddVariable
-      Char_t   fVarType;         // the variable type to be used internally ('F'-default or 'I')
-      Double_t fXminNorm;        // minimum value for correlated/decorrelated/PCA variable
-      Double_t fXmaxNorm;        // maximum value for correlated/decorrelated/PCA variable
-      Double_t fXmeanNorm;       // mean value for correlated/decorrelated/PCA variable
-      Double_t fXrmsNorm;        // rms value for correlated/decorrelated/PCA variable
-      Bool_t   fNormalized;      // variable gets normalized
-=======
       TString  fExpression;      //! original variable expression (can be a formula)
       TString  fInternalName;    //! internal variable name (needs to be regular expression)
       TString  fLabel;           //! variable label, set by "mylabel := var1 + var2", this is a shortcut
@@ -125,7 +112,6 @@ namespace TMVA {
       Double_t fXrmsNorm;        //! rms value for correlated/decorrelated/PCA variable
       Double_t fXvarianceNorm;   //! Variance value for correlated/decorrelated/PCA variable
       Bool_t   fNormalized;      //! variable gets normalized
->>>>>>> 5414b2b6b5edde9870aa195d9941d49dc9bc69d1
       void*    fExternalData;    //! if the variable content is linked to an external pointer      
       TString  fExternalDataType;// type of external variable (int, long, double, float) - to be done JS
       Int_t    fVarCounter;      // dummy variable

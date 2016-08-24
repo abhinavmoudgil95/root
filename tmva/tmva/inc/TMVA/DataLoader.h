@@ -86,7 +86,6 @@ namespace TMVA {
       DataSetInfo& AddDataSet( DataSetInfo& );
       DataSetInfo& AddDataSet( const TString&  );
 
-      void CalcNorm();
       DataLoader* VarTransform(TString trafoDefinition);
 
       // special case: signal/background
@@ -185,11 +184,6 @@ namespace TMVA {
       DataInputHandler&        DataInput() { return *fDataInputHandler; }
       DataSetInfo&             DefaultDataSetInfo();
       void                     SetInputTreesFromEventAssignTrees();
-      void                     CopyDataLoader(DataLoader* des, DataLoader* src);
-      void                     UpdateNorm (Int_t ivar, Double_t x); 
-      TTree*                   MakeDataSetTree();
-      DataLoader*              AETransform(MethodDNN *method, Int_t indexLayer);
-
 
    private:
 
@@ -208,7 +202,6 @@ namespace TMVA {
       TString                                   fTransformations; //! List of transformations to test
       Bool_t                                    fVerbose;         //! verbose mode
       TString                                   fName;         //! name, used as directory in output
-      Bool_t                                    fCalcNorm;   //! Checks if min, max, mean, RMS and variance of variables are calculated
       // flag determining the way training and test data are assigned to DataLoader
       enum DataAssignType { kUndefined = 0, 
                             kAssignTrees,
