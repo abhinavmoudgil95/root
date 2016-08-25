@@ -421,8 +421,8 @@ TMatrixD& TMVA::VarTransformHandler::GetRowsMean(TMatrixD& mat)
    return (*row_mean);
 }
 
-// ////////////////////////////////////////////////////////////////////////////////
-// /// Slice the matrix
+////////////////////////////////////////////////////////////////////////////////
+/// Slice the matrix
 
 TMatrixD& TMVA::VarTransformHandler::SliceMatrix(TMatrixD& mat, Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb)
 {
@@ -449,42 +449,60 @@ TMatrixD& TMVA::VarTransformHandler::SliceMatrix(TMatrixD& mat, Int_t row_lwb, I
    return (*sliced_matrix);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// Calculates 2 norm or Euclidean Norm of a matrix
+
+Double_t TMVA::VarTransformHandler::GetMatrixNorm(TMatrixD& mat)
+{
+   Int_t n = mat.GetNrows();
+   Int_t d = mat.GetNcols();
+   Double_t sum = 0;
+   for (Int_t i = 0; i < n; i++)
+   {
+      for (Int_t j = 0; j < d; j++)
+         sum += (mat(i, j)*mat(i, j));
+   }
+   return sqrt(sum);
+}
+
 // ////////////////////////////////////////////////////////////////////////////////
 // /// Performs Gram Schmidt Orthogonalization of a matrix
 
-// std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::GramSchOrthogonalisation(TMatrixD& mat)
-// {
-//    Int_t nrows = mat.GetNrows();
-//    Int_t ncols = mat.GetNcols();
-//    std::pair<TMatrixD, TMatrixD> Q;
-//    TMatrixD V(mat);
-//    TMatrix R(ncols, ncols);
-//    TMatrix cols_mean = GetColsMean(V);
+std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::GramSchOrthogonalisation(TMatrixD& mat)
+{
+   Int_t nrows = mat.GetNrows();
+   Int_t ncols = mat.GetNcols();
+   TMatrixD V(nrows, ncols);
+   V = mat;
+   TMatrixD R(ncols, ncols);
 
-//    for (Int_t i = 0; i < ncols; i++)
-//    {
-//       R(i, i) = cols_mean(1, i);
-//       for (Int_t it = 0; it < nrows; it++)
-//       {
-//          V(it, i) = V(it, i)/R(i, i);
-//       }
-//       if (i < ncols)
-//       {
-//          for (Int_t j = i + 1; j < n; j++)
-//          {
-
-//             R(i, j) = SliceMatrix(V, 0, nrows, i, i).Transpose() * SliceMatrix(V, 0, nrows, j, j);
-//             for (Int_t k = 0; k < nrows; k++)
-//             {
-//                V(k, j) = V(k, j) - R(i, j) * V(k, i);
-//             }
-//          }
-//       }
-//    }
-//    Q.first = V;
-//    Q.second = R;
-//    return Q;
-// }
+   std::pair<TMatrixD, TMatrixD> Q(V,R);
+   for (Int_t i = 0; i < ncols; i++)
+   {
+      R(i, i) = GetMatrixNorm(SliceMatrix(V, 0, nrows-1, i, i));
+      for (Int_t it = 0; it < nrows; it++)
+         V(it, i) = V(it, i)/R(i, i);
+      if (i < ncols-1)
+      {
+         for (Int_t j = i + 1; j < ncols; j++)
+         {
+            TMatrixD X = SliceMatrix(V, 0, nrows-1, i, i);
+            X.Transpose(X);
+            TMatrixD Y = SliceMatrix(V, 0, nrows-1, j, j);
+            TMatrixD Z(1,1);
+            Z.Mult(X,Y);
+            R(i, j) = Z(0,0);
+            for (Int_t k = 0; k < nrows; k++)
+            {
+               V(k, j) = V(k, j) - R(i, j) * V(k, i);
+            }
+         }
+      }
+   }
+   Q.first = V;
+   Q.second = R;
+   return Q;
+}
 
 // ////////////////////////////////////////////////////////////////////////////////
 // /// TODO UDV' = SVD(X), Computes SVD of a matrix and  returns V

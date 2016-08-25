@@ -36,6 +36,8 @@ namespace TMVA {
       TMVA::DataLoader* FeatureClustering();
       TMVA::DataLoader* HessianLocalLinearEmbedding(Int_t no_dims, Int_t k);
       mutable MsgLogger* fLogger;             //! message logger
+      Double_t GetMatrixNorm(TMatrixD& mat);
+
       MsgLogger& Log() const { return *fLogger; }
 
    private:
@@ -51,6 +53,7 @@ namespace TMVA {
       TMatrixD&                     GetColsMean(TMatrixD& mat);
       TMatrixD&                     GetRowsMean(TMatrixD& mat);
       std::pair<TMatrixD, TMatrixD> FindNearestNeighbours(TMatrixD& data, Int_t k);
+      std::pair<TMatrixD, TMatrixD> GramSchOrthogonalisation(TMatrixD& mat);
    };
 
 }
