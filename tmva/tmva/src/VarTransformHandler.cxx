@@ -272,14 +272,17 @@ TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOpt
 ////////////////////////////////////////////////////////////////////////////////
 /// Hessian Local Linear Embedding
 
-// TMVA::DataLoader* TMVA::VarTransformHandler::LocalLinearEmbedding(Int_t no_dims, Int_t k)
+// TMVA::DataLoader* TMVA::VarTransformHandler::HessianLocalLinearEmbedding(Int_t no_dims, Int_t k)
 // {
+
+//    std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
+//    UInt_t nvars = fDataSetInfo.GetNVariables();
+//    UInt_t nevts = fEvents.size();
 //    // compute data matrix
 //    for (UInt_t ievt=0; ievt<nevts; ievt++) {
 //       const Event* ev = fEvents[ievt];
 //       // Double_t weight = ev->GetWeight();
 //       // sumOfWeights += weight;
-//       Double_t sum;
 //       for (UInt_t ivar=0; ivar<nvars; ivar++) {
 //          Double_t x = ev->GetValue(ivar);
 //          data(ievt, ivar) = x;
@@ -287,9 +290,6 @@ TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOpt
 //    }
 
 //    // Find nearest neighbours
-//    std::vector<VariableInfo>& vars = fDataSetInfo.GetVariableInfos();
-//    UInt_t nvars = fDataSetInfo.GetNVariables();
-//    UInt_t nevts = fEvents.size();
 //    std::pair<TMatrixD, TMatrixD> kmap;
 //    kmap = FindNearestNeighbours(data, k);
 //    Int_t max_k = kmap.second.GetNcols();
@@ -536,50 +536,44 @@ TMatrixD& TMVA::VarTransformHandler::SliceMatrix(TMatrixD& mat, Int_t row_lwb, I
 // }
 
 // // TODO: modify it by event weight
-// std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::FindNearestNeighbours(TMatrixD data, Int_t k)
-// {
-//    UInt_t nevts = fEvents.size();
-//    UInt_t nvars = fDataSetInfo.GetNVariables();
+std::pair<TMatrixD, TMatrixD> TMVA::VarTransformHandler::FindNearestNeighbours(TMatrixD& data, Int_t k)
+{
+   UInt_t nevts = data.GetNrows();
+   UInt_t nvars = data.GetNcols();
+   Log() << kINFO << nevts << " - number of events" << Endl;
+   Log() << kINFO << nvars << " - number of variables" << Endl;
 
-//    // compute data matrix and sum of variables for each event
-//    // TMatrixD data ( nevts, nvars );
-//    // for (UInt_t ievt=0; ievt<nevts; ievt++) {
-//    //    const Event* ev = fEvents[ievt];
-//    //    // Double_t weight = ev->GetWeight();
-//    //    // sumOfWeights += weight;
-//    //    for (UInt_t ivar=0; ivar<nvars; ivar++) {
-//    //       Double_t x = ev->GetValue(ivar);
-//    //       data(ievt, ivar) = x;
-//    //    }
-//    // }
 
-//    // find distance between events and pick top k
-//    std::pair <TMatrixD, TMatrixD> kmap;
-//    TMatrixD D(nevts, k); D *= 0;
-//    TMatrixD ni(nevts, k); ni *= 0;
-//    std::vector< std::pair<Double_t, Int_t> > distances(nevts - 1);
-//    for (UInt_t i = 0; i < nevts; i += 1)
-//    {
-//       for (UInt_t j = 0; (j < nevts & j != i); j++)
-//       {
-//          Double_t d = 0;
-//          for (UInt_t ivar = 0; ivar < nvars; ivar++)
-//          {
-//             d += ((data(i, ivar) - data(j, ivar)) * (data(i, ivar) - data(j, ivar)));
-//          }
-//          distances[j].first = sqrt(d);
-//          distances[j].second = j;
-//       }
-//       std::sort(distances.begin(), distances.end());
-//       for (Int_t it = 0; it < k; i++) {
-//          D(i, it) = distances[it].first;
-//          ni(i, it) = distances[it].second;
-//       }
-//    }
-//    kmap.first = D;
-//    kmap.second = ni;
-//    return kmap;
-// }
+   // find distance between events and pick k nearest neighbour for each event
+   TMatrixD D(nevts, k); D *= 0;
+   TMatrixD ni(nevts, k); ni *= 0;
+   std::vector< std::pair<Double_t, Int_t> > distances(nevts);
+   std::pair<TMatrixD, TMatrixD> kmap(D, ni);
+   for (UInt_t i = 0; i < nevts; i++)
+   {
+      for (UInt_t j = 0; j < nevts; j++)
+      {
+         Double_t d = 0;
+         for (UInt_t ivar = 0; ivar < nvars; ivar++)
+         {
+            d += ((data(i, ivar) - data(j, ivar)) * (data(i, ivar) - data(j, ivar)));
+         }
+         distances[j].first = sqrt(d);
+         distances[j].second = j;
+      }
+      std::sort(distances.begin(), distances.end());
+      for (Int_t it = 1; it < k + 1; it++) {
+         D(i, it-1) = distances[it].first;
+         ni(i, it-1) = distances[it].second;
+         // Log() << kINFO << "(" << i << "," << it << ") " << D(i, it-1) << Endl;
+         // Log() << kINFO << ni(i, it - 1) << " ";
+      }
+      Log() << kINFO << Endl;
+   }
+   kmap.first = D;
+   kmap.second = ni;
+   return kmap;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Returns a single tree containing all the trees of the dataset

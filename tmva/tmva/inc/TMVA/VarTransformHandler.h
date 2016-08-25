@@ -26,7 +26,7 @@ namespace TMVA {
    class MsgLogger;
    class DataInputHandler;
    class VarTransformHandler {
-   public: 
+   public:
 
       VarTransformHandler(DataLoader*);
       ~VarTransformHandler();
@@ -34,8 +34,7 @@ namespace TMVA {
       TMVA::DataLoader* VarianceThreshold(Double_t threshold);
       TMVA::DataLoader* AutoencoderTransform(TString dnnOptions, TString preTrngValue, Int_t indexLayer);
       TMVA::DataLoader* FeatureClustering();
-      TMVA::DataLoader* LocalLinearEmbedding(Int_t no_dims, Int_t k);
-
+      TMVA::DataLoader* HessianLocalLinearEmbedding(Int_t no_dims, Int_t k);
       mutable MsgLogger* fLogger;             //! message logger
       MsgLogger& Log() const { return *fLogger; }
 
@@ -51,6 +50,7 @@ namespace TMVA {
       TMatrixD&                     SliceMatrix(TMatrixD& mat, Int_t row_lwb, Int_t row_upb, Int_t col_lwb, Int_t col_upb);
       TMatrixD&                     GetColsMean(TMatrixD& mat);
       TMatrixD&                     GetRowsMean(TMatrixD& mat);
+      std::pair<TMatrixD, TMatrixD> FindNearestNeighbours(TMatrixD& data, Int_t k);
    };
 
 }
