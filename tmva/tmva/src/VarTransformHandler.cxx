@@ -5,6 +5,11 @@
 #include "TMatrix.h"
 #include "TMatrixTSparse.h"
 #include "TMatrixDSparsefwd.h"
+#include <TCanvas.h>
+#include "TGraph.h"
+#include "TStyle.h"
+#include "TLegend.h"
+#include "TH2.h"
 
 #include "TMVA/VarTransformHandler.h"
 #include "TMVA/DataSet.h"
@@ -18,6 +23,7 @@
 #include "TMVA/DataLoader.h"
 #include "TMVA/ClassifierFactory.h"
 #include "TMVA/DataInputHandler.h"
+
 
 #include <vector>
 #include <iomanip>
@@ -71,8 +77,9 @@ TMVA::DataLoader* TMVA::VarTransformHandler::VarianceThreshold(Double_t threshol
 
    // return a new dataloader
    // iterate over all variables, ignore the ones whose variance is below specific threshold
-   DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
+   // DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone("vt_transformed_dataset");
    // TMVA::DataLoader *transformedLoader = new TMVA::DataLoader(fDataSetInfo.GetName());
+   TMVA::DataLoader *transformedLoader = new TMVA::DataLoader("vt_transformed_dataset");
    Log() << kINFO << "Selecting variables whose variance is above threshold value = " << threshold << Endl;
    Int_t maxL = fDataSetInfo.GetVariableNameMaxLength();
    maxL = maxL + 16;
@@ -89,6 +96,7 @@ TMVA::DataLoader* TMVA::VarTransformHandler::VarianceThreshold(Double_t threshol
          transformedLoader->AddVariable(vars[ivar].GetExpression(), vars[ivar].GetVarType());
       }
    }
+   CopyDataLoader(transformedLoader,fDataLoader);
    Log() << kINFO << "----------------------------------------------------------------" << Endl;
    // CopyDataLoader(transformedLoader, fDataLoader);
    // DataLoader *transformedLoader=(DataLoader *)fDataLoader->Clone(fDataSetInfo.GetName());
@@ -101,7 +109,7 @@ TMVA::DataLoader* TMVA::VarTransformHandler::VarianceThreshold(Double_t threshol
 ////////////////////////////////////////////////////////////////////////////////
 /// Autoencoder Transform
 
-TMVA::DataLoader* TMVA::VarTransformHandler::AutoencoderTransform(TString dnnOptions, TString preTrngValue, Int_t indexLayer)
+TMVA::DataLoader* TMVA::VarTransformHandler::DeepAutoencoder(TString dnnOptions, TString preTrngValue, Int_t indexLayer)
 {
    // TODO implement pre-training
    preTrngValue = "false";
@@ -782,16 +790,16 @@ void TMVA::VarTransformHandler::CalcNorm()
 }
 
 //_______________________________________________________________________
-// void TMVA::VarTransformHandler::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src)
-// {
-//    for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Sbegin();treeinfo!=src->DataInput().Send();treeinfo++)
-//    {
-//       des->AddSignalTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
-//    }
+void TMVA::VarTransformHandler::CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src)
+{
+   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Sbegin();treeinfo!=src->DataInput().Send();treeinfo++)
+   {
+      des->AddSignalTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+   }
 
-//    for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Bbegin();treeinfo!=src->DataInput().Bend();treeinfo++)
-//    {
-//       des->AddBackgroundTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
-//    }
-// }
+   for( std::vector<TreeInfo>::const_iterator treeinfo=src->DataInput().Bbegin();treeinfo!=src->DataInput().Bend();treeinfo++)
+   {
+      des->AddBackgroundTree( (*treeinfo).GetTree(), (*treeinfo).GetWeight(),(*treeinfo).GetTreeType());
+   }
+}
 

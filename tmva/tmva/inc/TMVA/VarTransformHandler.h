@@ -32,12 +32,10 @@ namespace TMVA {
       ~VarTransformHandler();
 
       TMVA::DataLoader* VarianceThreshold(Double_t threshold);
-      TMVA::DataLoader* AutoencoderTransform(TString dnnOptions, TString preTrngValue, Int_t indexLayer);
+      TMVA::DataLoader* DeepAutoencoder(TString dnnOptions, TString preTrngValue, Int_t indexLayer);
       TMVA::DataLoader* FeatureClustering();
       TMVA::DataLoader* HessianLocalLinearEmbedding(Int_t no_dims, Int_t k);
       mutable MsgLogger* fLogger;             //! message logger
-      Double_t GetMatrixNorm(TMatrixD& mat);
-
       MsgLogger& Log() const { return *fLogger; }
 
    private:
@@ -53,7 +51,9 @@ namespace TMVA {
       TMatrixD&                     GetColsMean(TMatrixD& mat);
       TMatrixD&                     GetRowsMean(TMatrixD& mat);
       std::pair<TMatrixD, TMatrixD> FindNearestNeighbours(TMatrixD& data, Int_t k);
+      Double_t                      GetMatrixNorm(TMatrixD& mat);
       std::pair<TMatrixD, TMatrixD> GramSchOrthogonalisation(TMatrixD& mat);
+      void                          CopyDataLoader(TMVA::DataLoader* des, TMVA::DataLoader* src);
    };
 
 }
