@@ -177,11 +177,11 @@ namespace TMVA {
       //Copy method use in VI and CV DEPRECATED: you can just call Clone  DataLoader *dl2=(DataLoader *)dl1->Clone("dl2")
       DataLoader* MakeCopy(TString name);
       friend void DataLoaderCopy(TMVA::DataLoader* des, TMVA::DataLoader* src);      
+      DataInputHandler&        DataInput() { return *fDataInputHandler; }
  
    private:
-
  
-      DataInputHandler&        DataInput() { return *fDataInputHandler; }
+      // DataInputHandler&        DataInput() { return *fDataInputHandler; }
       DataSetInfo&             DefaultDataSetInfo();
       void                     SetInputTreesFromEventAssignTrees();
 
