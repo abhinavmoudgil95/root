@@ -211,7 +211,7 @@ TMVA::DataLoader* TMVA::DataLoader::VarTransform(TString trafoDefinition)
       token = (TObjString*)nextToken();
       TString dnnOptions = token->GetString();            
 
-      TMVA::DataLoader* transformedLoader = handler->AutoencoderTransform(dnnOptions, preTrngValue, indexLayer);
+      TMVA::DataLoader* transformedLoader = handler->DeepAutoencoder(dnnOptions, preTrngValue, indexLayer);
       return transformedLoader;
    }  
    else {
